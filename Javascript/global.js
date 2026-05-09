@@ -1,5 +1,5 @@
 
-function initMenu(menuData) {
+export function initMenu(menuData) {
     const menuContent = document.getElementById('menuContent');
     if (!menuContent) return;
     const items = menuData.split('|');
