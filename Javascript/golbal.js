@@ -16,3 +16,7 @@ function initMenu(menuData) {
         }
     });
 }
+window.toggleMenu = function() {
+    const menu = document.getElementById('menuContainer');
+    if (menu) menu.classList.toggle('show-menu');
+};
