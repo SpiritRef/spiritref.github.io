@@ -1,0 +1,74 @@
+/* ==========================================================================
+   1. 基礎佈局與變數
+   ========================================================================== */
+body { 
+    font-family: -apple-system, system-ui, "Microsoft JhengHei", sans-serif; 
+    background: #f0f2f5; 
+    margin: 0; 
+    /* 增加底部 padding 確保內容不被 Dock 擋住 */
+    padding: 10px 10px 180px 10px; 
+    -webkit-tap-highlight-color: transparent;
+} 
+
+.container { width: 100%; max-width: 600px; margin: 0 auto; }
+h1 { font-size: 1.2rem; margin: 10px 0; color: #1c1e21; text-align: center; }
+/* ==========================================================================
+   2. 導航選單 (懸浮按鈕 + 動態選單)
+   ========================================================================== */
+.expandable-menu-container {
+    position: fixed;
+    bottom: 150px; /* 提高一點避開底部導航 */
+    right: 15px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.floating-service-btn {
+    background: #1c1e21;
+    color: #ffffff;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #ffc107;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.floating-service-btn:hover { transform: scale(1.1); background: #000; }
+#serviceText { display: none; }
+
+.menu-content {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: rgba(28, 30, 33, 0.95);
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid #ffc107;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    min-width: 130px;
+}
+
+.expandable-menu-container.show-menu .menu-content {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.menu-item {
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+}
+.menu-item:hover { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
