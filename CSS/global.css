@@ -81,3 +81,31 @@ h1 { font-size: 1.2rem; margin: 10px 0; color: #1c1e21; text-align: center; }
         transform: translateY(0);
     }
 }
+
+/* 修正後的「返回首頁」按鈕樣式 */
+.back-home { 
+    display: inline-block; 
+    margin-bottom: 20px; 
+    text-decoration: none; 
+    
+    /* 背景與邊框：使用您要求的 rgba 背景與金邊 */
+    background: rgba(28, 30, 33, 0.95); 
+    border: 1px solid #ffc107; 
+    
+    /* 字體顏色與間距 */
+    color: #ffffff; 
+    padding: 8px 16px;
+    font-size: 0.9rem; 
+    border-radius: 8px; /* 圓角與選單一致 */
+    
+    /* 動態效果：與懸浮按鈕一樣的過渡 */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* 懸停效果：放大並加深背景，對齊懸浮按鈕風格 */
+.back-home:hover { 
+    transform: scale(1.05); 
+    background: #000000; 
+    color: #ffc107; /* 懸停時字體變金，增加互動感 */
+}
