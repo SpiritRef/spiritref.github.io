@@ -119,3 +119,16 @@ h1 { font-size: 1.2rem; margin: 10px 0; color: #1c1e21; text-align: center; }
     background: #000000; 
     color: #ffc107; /* 懸停時字體變金，增加互動感 */
 }
+
+footer {
+    text-align: center;
+    padding: 20px 20px !important; /* 從 60px 大幅縮減為 20px */
+    background: #f4f4f4;
+    font-size: 0.8rem; /* 字體縮小一點更精緻 */
+    color: #888;
+    margin-top: 30px; /* 減少與上方內容的間距 */
+}
+
+footer p {
+    margin: 0; /* 消除段落預設的外距 */
+}
