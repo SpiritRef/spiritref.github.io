@@ -45,7 +45,8 @@
             timerElement.textContent = timeLeft;
             if (timeLeft <= 0) {
                 clearInterval(countdown);
-                window.location.href = "https://spiritref.github.io/services/";
+                // window.location.href = "https://spiritref.github.io/services/";
+                window.location.replace("https://spiritref.github.io/services/");
             }
         }, 1000);
     </script>
