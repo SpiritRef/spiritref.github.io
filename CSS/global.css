@@ -109,6 +109,7 @@ h1 { font-size: 1.2rem; margin: 10px 0; color: #1c1e21; text-align: center; }
    padding: 0px 16px;
    font-size: 0.9rem; 
    border-radius: 8px; /* 圓角與選單一致 */
+   margin-top: 12px;
    
    /* 動態效果：與懸浮按鈕一樣的過渡 */
    transition: all 0.3s ease;
