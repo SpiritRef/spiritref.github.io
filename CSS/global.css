@@ -94,23 +94,26 @@ h1 { font-size: 1.2rem; margin: 10px 0; color: #1c1e21; text-align: center; }
 
 /* 修正後的「返回首頁」按鈕樣式 */
 .back-home { 
-    display: inline-block; 
-    margin-bottom: 20px; 
-    text-decoration: none; 
-    
-    /* 背景與邊框：使用您要求的 rgba 背景與金邊 */
-    background: rgba(28, 30, 33, 0.95); 
-    border: 1px solid #ffc107; 
-    
-    /* 字體顏色與間距 */
-    color: #ffc107; 
-    padding: 8px 16px;
-    font-size: 0.9rem; 
-    border-radius: 8px; /* 圓角與選單一致 */
-    
-    /* 動態效果：與懸浮按鈕一樣的過渡 */
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+   display: inline-block; 
+   margin-bottom: 20px; 
+   text-decoration: none; 
+   
+   /* 背景與邊框：使用您要求的 rgba 背景與金邊 */
+   background: rgba(28, 30, 33, 0.95); 
+   border: 1px solid #ffc107; 
+   
+   /* 字體顏色與間距 */
+   color: #ffc107; 
+   padding: 8px 16px;
+   font-size: 0.9rem; 
+   border-radius: 8px; /* 圓角與選單一致 */
+   
+   /* 動態效果：與懸浮按鈕一樣的過渡 */
+   transition: all 0.3s ease;
+   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+   line-height: 1.2;          /* 強制兩者文字行高一致 */
+   box-sizing: border-box;    /* 確保邊框和內距不會額外撐大 button */
+   vertical-align: middle;    /* 讓它們在同一水平線上對齊 */
 }
 
 /* 懸停效果：放大並加深背景，對齊懸浮按鈕風格 */
