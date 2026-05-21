@@ -114,6 +114,10 @@ h1 { font-size: 1.2rem; margin: 10px 0; color: #1c1e21; text-align: center; }
    transition: all 0.3s ease;
    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
    box-sizing: border-box;    /* 確保邊框和內距不會額外撐大 button */
+   cursor: pointer;          /* 讓按鈕滑鼠滑過去時也有「小手」指針 */
+   font-family: inherit;     /* 關鍵：強制按鈕繼承網頁主字體，否則 button 字體常會縮小或變形 */
+   line-height: 1;
+   
 }
 
 /* 懸停效果：放大並加深背景，對齊懸浮按鈕風格 */
