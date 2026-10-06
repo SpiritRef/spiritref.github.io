@@ -18,9 +18,13 @@
 
 ## 檔案結構
 
-* **`index.html`**: 主入口檔案，包含強制跳轉至 `/services` 的代碼。
-* **`404.html`**: 自定義錯誤頁面，當路徑錯誤時自動導引回正確頁面。
-* **`README.md`**: 本說明文件。
+*   **`index.html`**: 主入口檔案，包含強制跳轉至 `/services` 的代碼。
+*   **`404.html`**: 自定義錯誤頁面，當路徑錯誤時自動導引回正確頁面。
+*   **`CSS/global.css`**: 全站共用樣式表。
+*   **`Javascript/global.js`**: 全站共用 JavaScript 功能。
+*   **`settings/global.ini`**: 系統設定檔（選單、API 路徑）。
+*   **`Data/`**: 資料儲存目錄（JSON 格式）。
+*   **`README.md`**: 本說明文件。
 
 ---
 
@@ -40,4 +44,17 @@
 ---
 
 ## 部署說明
+
 只要將這些檔案上傳至 `spiritref.github.io` 儲存庫的 `main` 分支根目錄，GitHub Pages 便會自動完成部署。
+
+---
+
+## 🎨 設計風格
+
+全站採用**牛皮紙質感古典風格**：
+- **背景色**：`#f8f9fa` 淺灰
+- **卡片質感**：牛皮紙漸層 `#f7ebd7 → #e6d3af`
+- **卡片邊框**：`1px solid #dcbfa2` + 左側 `5px solid #8b7355`
+- **標題顏色**：`#4a2e1b` 深褐色
+- **內文顏色**：`#5c4332` 深棕色
+- **字體**：系統字體（PingFang TC、Microsoft JhengHei）
