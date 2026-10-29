@@ -1062,6 +1062,19 @@ export async function initAdmin(sess) {
 		else if (b.dataset.act === 'edit') openEditor('post', i);
 		else if (b.dataset.act === 'preview') previewOnly('post', i);
 		else if (b.dataset.act === 'del') delItem('post', i, b);
+		else if (b.dataset.sact === 'copy') {
+			const relativeUrl = b.dataset.url;
+			if (!relativeUrl) return;
+			const absoluteUrl = new URL(relativeUrl, window.location.href).href;
+			navigator.clipboard.writeText(absoluteUrl).then(() => {
+				setStatus(`✅ 已複製：\n${absoluteUrl}`, 'green');
+				setTimeout(() => { setStatus('', ''); }, 3000);
+                
+			}).catch(err => {
+				setStatus('❌ 複製失敗', 'red');
+				setTimeout(() => { setStatus('', ''); }, 3000);
+			});
+		}
 	};
 	$('svcReload').onclick = loadSvc;
 	$('svcSearch').oninput = () => { svcPage = 1; renderSvcRows(); };
