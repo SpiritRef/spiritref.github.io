@@ -934,7 +934,7 @@ async function loadImages() {
 	try {
 		const pat = finalToken || '';
 		const h = pat ? { Authorization: `token ${pat}` } : {};
-		const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GHOST_REPO}/contents/pic`, { headers: h });
+		const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${GHOST_REPO}/pic`, { headers: h });
 		if (!r.ok) throw new Error(`HTTP ${r.status}`);
 		const files = (await r.json()).filter(f => f.type === 'file');
 		$('imgGrid').innerHTML = files.map(f => `<div class="imgcell">
@@ -1035,6 +1035,8 @@ export async function initAdmin(sess) {
 			imgLoaded = true;
 			loadImages();
 		}
+		if (b.dataset.tab === 'posts' && !allPosts.length) loadPosts();
+		if (b.dataset.tab === 'notices' && !allNotices.length) loadNotices();
 	});
 
 	$('postSearch').oninput = () => { postPage = 1; renderPosts(); };
@@ -1060,6 +1062,19 @@ export async function initAdmin(sess) {
 		else if (b.dataset.act === 'edit') openEditor('post', i);
 		else if (b.dataset.act === 'preview') previewOnly('post', i);
 		else if (b.dataset.act === 'del') delItem('post', i, b);
+		else if (b.dataset.sact === 'copy') {
+			const relativeUrl = b.dataset.url;
+			if (!relativeUrl) return;
+			const absoluteUrl = new URL(relativeUrl, window.location.href).href;
+			navigator.clipboard.writeText(absoluteUrl).then(() => {
+				setStatus(`✅ 已複製：\n${absoluteUrl}`, 'green');
+				setTimeout(() => { setStatus('', ''); }, 3000);
+                
+			}).catch(err => {
+				setStatus('❌ 複製失敗', 'red');
+				setTimeout(() => { setStatus('', ''); }, 3000);
+			});
+		}
 	};
 	$('svcReload').onclick = loadSvc;
 	$('svcSearch').oninput = () => { svcPage = 1; renderSvcRows(); };
@@ -1142,7 +1157,7 @@ export async function initAdmin(sess) {
 			}
 			try {
 				const token = await ensurePat();
-				const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GHOST_REPO}/contents/${b.dataset.del}`, {
+				const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${GHOST_REPO}/${b.dataset.del}`, {
 					method: 'DELETE', headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
 					body: JSON.stringify({ message: `Delete ${b.dataset.del} (admin)`, sha: b.dataset.sha })
 				});
@@ -1171,7 +1186,7 @@ export async function initAdmin(sess) {
 		logOp('清除快取', '');
 	};
 
-	await loadPosts();
-	await loadNotices();
-	await loadSvc();
+	loadPosts();
+	loadNotices();
+	loadSvc();
 }
