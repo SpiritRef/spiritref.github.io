@@ -11,7 +11,7 @@
 		body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f8f9fa; padding: 20px; margin: 0; display: flex; justify-content: center; color: #3e2723; }
 		#gateMsg { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid #dcbfa2; width: 100%; max-width: 450px; text-align: center; font-weight: bold; color: #4a2e1b; }
 		#adminRoot { display: none; width: 100%; max-width: 1000px; }
-		.topbar { background: linear-gradient(135deg, #f7ebd7 0%, #e6d3af 100%); padding: 15px 20px; border-radius: 12px; border: 1px solid #dcbfa2; border-left: 5px solid #8b7355; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+		.topbar { background: linear-gradient(135deg, #f7ebd7 0%, #e6d3af 100%); padding: 15px 20px; border-radius: 12px; border: 1px solid #dcbfa2; border-left: 5px solid #8b7355; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
 		.topbar h2 { margin: 0; color: #4a2e1b; font-size: 1.2em; flex: 1 1 auto; }
 		.topbar input { padding: 8px; border: 1px solid #dcbfa2; border-radius: 6px; width: 150px; }
 		.topbar button { padding: 8px 14px; background: #8b7355; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; font-weight: bold; }
@@ -50,6 +50,14 @@
 		.health-ok { color: green; font-weight: bold; } .health-bad { color: #b04a3a; font-weight: bold; }
 		.cell-text { cursor: pointer; }
 		#oplog { font-size: 13px; max-height: 220px; overflow-y: auto; background: #faf6f0; border: 1px solid #eee; border-radius: 8px; padding: 10px; white-space: pre-wrap; }
+		@media (max-width: 600px) {
+			.topbar { flex-direction: column; align-items: stretch; gap: 12px; }
+			.topbar h2 { text-align: center; margin-bottom: 5px; }
+			.topbar-controls { display: flex; gap: 10px; width: 100%; }
+			.topbar input { flex: 1;  width: auto; }
+			.topbar button { flex-shrink: 0; }
+			#adminUser { text-align: center; }
+		}
 	</style>
 </head>
 <body>
@@ -65,8 +73,10 @@
 	
 	<div class="topbar">
 		<h2>🛠️ 管理後台</h2>
-		<input type="password" id="adminPwd" placeholder="管理密碼">
-		<button id="logoutBtn">登出</button>
+		<div class="topbar-controls">
+			<input type="password" id="adminPwd" placeholder="管理密碼">
+			<button id="logoutBtn">登出</button>
+		</div>
 		<div id="adminUser">驗證登入中...</div>
 	</div>
 
