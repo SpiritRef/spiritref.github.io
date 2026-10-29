@@ -934,7 +934,7 @@ async function loadImages() {
 	try {
 		const pat = finalToken || '';
 		const h = pat ? { Authorization: `token ${pat}` } : {};
-		const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GHOST_REPO}/contents/pic`, { headers: h });
+		const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${GHOST_REPO}/pic`, { headers: h });
 		if (!r.ok) throw new Error(`HTTP ${r.status}`);
 		const files = (await r.json()).filter(f => f.type === 'file');
 		$('imgGrid').innerHTML = files.map(f => `<div class="imgcell">
@@ -1144,7 +1144,7 @@ export async function initAdmin(sess) {
 			}
 			try {
 				const token = await ensurePat();
-				const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GHOST_REPO}/contents/${b.dataset.del}`, {
+				const r = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${GHOST_REPO}/${b.dataset.del}`, {
 					method: 'DELETE', headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
 					body: JSON.stringify({ message: `Delete ${b.dataset.del} (admin)`, sha: b.dataset.sha })
 				});
