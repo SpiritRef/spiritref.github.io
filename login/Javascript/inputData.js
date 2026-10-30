@@ -200,7 +200,7 @@ window.uploadToGithub = async function() {
 				reader.onerror = (e) => reject(e);
 			});
 
-			const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${filePath}`;
+			const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${GITHUB_REPO}/${filePath}`;
 			const res = await fetch(apiUrl, {
 				method: "PUT",
 				headers: ghHeaders(pat),
