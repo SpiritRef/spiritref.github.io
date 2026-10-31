@@ -268,8 +268,11 @@ window.sendData = async function() {
 			}
 			const { buildSitemapXml } = await import('/Javascript/sitemap.js');
 			const sitemapXml = buildSitemapXml(posts, services);
-			const smRes = await ghRead(pat, JSON_REPO, 'sitemap.xml');
-			await ghWrite(pat, JSON_REPO, 'sitemap.xml', sitemapXml, `inputData save sitemap`, smRes.sha);
+			const smApi = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/sitemap.xml`;
+			const smG = await fetch(smApi, { headers: ghHeaders(pat) });
+			let smSha = null;
+			if (smG.ok) smSha = (await smG.json()).sha;
+			await ghWrite(pat, JSON_REPO, 'sitemap.xml', sitemapXml, `inputData save sitemap`, smSha);
 		} catch (se) { console.warn("sitemap 更新失敗（不影響本文）:", se); }
 
 		status.innerText = "✅ 已發佈！前台約 1~3 分鐘生效。";
