@@ -109,15 +109,19 @@ async function ghModifyJson(pat, repo, path, transform, message) {
 async function ghWriteFile(pat, repo, path, content, message) {
 	const api = `https://api.github.com/repos/${GITHUB_USER}/${repo}/contents/${path}`;
 	const h = ghHeaders(pat);
-	let sha = null;
-	const g = await fetch(api, { headers: h });
-	if (g.ok) sha = (await g.json()).sha;
-	else if (g.status !== 404) throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}`);
-	const body = { message, content: toB64(content) };
-	if (sha) body.sha = sha;
-	const p = await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
-	if (!p.ok) throw new Error(`寫入 ${path} 失敗: HTTP ${p.status} ${(await p.text()).slice(0, 100)}`);
-	return true;
+	for (let attempt = 0; attempt < 2; attempt++) {
+		let sha = null;
+		const g = await fetch(api, { headers: h });
+		if (g.ok) sha = (await g.json()).sha;
+		else if (g.status !== 404) throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}`);
+		const body = { message, content: toB64(content) };
+		if (sha) body.sha = sha;
+		const p = await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
+		if (p.status === 409 && attempt === 0) continue;
+		if (!p.ok) throw new Error(`寫入 ${path} 失敗: HTTP ${p.status} ${(await p.text()).slice(0, 100)}`);
+		return true;
+	}
+	throw new Error('連續衝突，請稍後再試');
 }
 
 // buildSitemapXml 已移至 /Javascript/sitemap.js 共用

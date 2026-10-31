@@ -124,7 +124,7 @@ window.uploadToGithub = async function() {
 		status.style.color = "red";
 		return;
 	}
-	if (!pat) return;
+	if (!pat) { if (publishBtn) publishBtn.disabled = false; return; }
 
 	const fileInput = document.getElementById('fileInput');
 	const picInput = document.getElementById('pic');
@@ -197,7 +197,10 @@ window.uploadToGithub = async function() {
 
 // --- 發文：直接附加到 GitHub JSON（讀-改-寫，衝突自動重試一次） ---
 window.sendData = async function() {
+	const publishBtn = document.querySelector('button[onclick="sendData()"]');
+	if (publishBtn) publishBtn.disabled = true;
 	const session = await requireSession();
+	if (!session) { if (publishBtn) publishBtn.disabled = false; return; }
 	if (!session) return;
 	const status = document.getElementById('status');
 	let pat = '';
@@ -208,7 +211,7 @@ window.sendData = async function() {
 		status.style.color = "red";
 		return;
 	}
-	if (!pat) return;
+	if (!pat) { if (publishBtn) publishBtn.disabled = false; return; }
 
 	const title = document.getElementById('title').value.trim();
 	const content = document.getElementById('content').value;
@@ -272,14 +275,23 @@ window.sendData = async function() {
 			const smG = await fetch(smApi, { headers: ghHeaders(pat) });
 			let smSha = null;
 			if (smG.ok) smSha = (await smG.json()).sha;
-			await ghWrite(pat, JSON_REPO, 'sitemap.xml', sitemapXml, `inputData save sitemap`, smSha);
+			let smResult = await ghWrite(pat, JSON_REPO, 'sitemap.xml', sitemapXml, `inputData save sitemap`, smSha);
+			if (smResult === 'conflict') {
+				const smG2 = await fetch(smApi, { headers: ghHeaders(pat) });
+				if (smG2.ok) smSha = (await smG2.json()).sha;
+				smResult = await ghWrite(pat, JSON_REPO, 'sitemap.xml', sitemapXml, `inputData save sitemap`, smSha);
+			}
+			if (smResult !== 'ok') throw new Error('sitemap 寫入失敗: ' + smResult);
 		} catch (se) { console.warn("sitemap 更新失敗（不影響本文）:", se); }
 
 		status.innerText = "✅ 已發佈！前台約 1~3 分鐘生效。";
 		status.style.color = "green";
 
+		if (publishBtn) publishBtn.disabled = false;
+
 		resetForm();
 	} catch (e) {
+		if (publishBtn) publishBtn.disabled = false;
 		status.innerText = "❌ 發佈失敗：" + e.message;
 		console.error(e);
 	}
