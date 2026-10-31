@@ -140,30 +140,15 @@
 </footer>
 
 <script type="module">
-    import { getIni } from '/Javascript/global.js';
+    import { getIni, getCombinedId, formatDate } from '/Javascript/global.js?v=20261031';
 
     window.toggleMenu = function() {
         const menu = document.getElementById('menuContainer');
         if (menu) menu.classList.toggle('show-menu');
     };
 
-    function formatDate(raw) {
-        if (!raw) return "未知日期";
-        let d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
-        if (isNaN(d.getTime())) return raw;
-        const pad = (n) => String(n).padStart(2, '0');
-        return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    }
-
-    function getCombinedId(post) {
-        const pid = post["PostID"] || "0";
-        let d = (typeof post["發佈日期"] === 'number') ? new Date((post["發佈日期"] - 25569) * 86400 * 1000) : new Date(post["發佈日期"]);
-        if (isNaN(d.getTime())) return `${pid}_0000`;
-        const pad = (n) => String(n).padStart(2, '0');
-        const ts = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-        return `${pid}_${ts}`;
-    }
-
+// formatDate 已移至 /Javascript/global.js 共用
+// getCombinedId 已移至 /Javascript/global.js 共用
     async function init() {
 		applySettings();
         const urlParams = new URLSearchParams(window.location.search);

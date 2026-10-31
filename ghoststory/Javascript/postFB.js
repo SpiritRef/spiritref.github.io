@@ -1,4 +1,4 @@
-import { getIni, getRemoteVersion } from '/Javascript/global.js?v=20261011';
+import { getIni, getRemoteVersion, getCombinedId, formatDate } from '/Javascript/global.js?v=20261031';
 
 let allPosts = [];
 let filteredPosts = [];
@@ -253,24 +253,7 @@ function renderList(posts) {
 /**
  * 8. 輔助函式 (ID生成、日期、標題選單)
  */
-function getCombinedId(post) {
-    const pid = post["PostID"] || "0";
-    let d = (typeof post["發佈日期"] === 'number') 
-            ? new Date((post["發佈日期"] - 25569) * 86400 * 1000) 
-            : new Date(post["發佈日期"]);
-    if (isNaN(d.getTime())) return `${pid}_00000000000000`;
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${pid}_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-}
-
-function formatDate(raw) {
-    if (!raw) return "無日期";
-    let d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
-    if (isNaN(d.getTime())) return raw;
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
+// getCombinedId / formatDate 已移至 /Javascript/global.js 共用
 function updateTitleDropdown() {
     const titleFilter = document.getElementById('titleFilter');
     if (!titleFilter) return;

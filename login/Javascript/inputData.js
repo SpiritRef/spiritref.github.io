@@ -1,4 +1,5 @@
 import { getSession } from './adminAuth.js?v=20261011';
+import { GITHUB_USER, JSON_REPO, ghHeaders, toB64 as toBase64Utf8, fromB64 as fromBase64Utf8, netInfo } from '/Javascript/adminCommon.js?v=20261031';
 
 async function requireSession() {
 	const session = await getSession();
@@ -10,10 +11,8 @@ async function requireSession() {
 }
 
 // --- 1. 配置設定（資料庫 = GitHub 靜態 JSON，不再經 GAS） ---
-const GITHUB_USER = "SpiritRef";
 const GITHUB_REPO = "ghoststory"; // 圖片庫
 const GITHUB_PATH = "pic";
-const JSON_REPO = "spiritref.github.io"; // 資料庫
 const JSON_PATH = "Data/postFB.json";
 const VERSION_PATH = "Data/postFB.version.json";
 
@@ -26,22 +25,7 @@ async function getToken(status) {
 	const name = document.getElementById('token').value.trim();
 	if (!name) { alert("請輸入管理密碼！"); return ''; }
 	let net = {};
-	try {
-		const cached = sessionStorage.getItem('net_info');
-		if (cached) {
-			net = JSON.parse(cached);
-		} else {
-			const ctl = new AbortController();
-			const timer = setTimeout(() => ctl.abort(), 4000);
-			const r = await fetch('https://ipapi.co/json/', { signal: ctl.signal });
-			clearTimeout(timer);
-			if (r.ok) {
-				const j = await r.json();
-				net = { ip: j.ip || '', loc: [j.city, j.region, j.country_name].filter(Boolean).join('·') };
-				sessionStorage.setItem('net_info', JSON.stringify(net));
-			}
-		}
-	} catch (e) {}
+	try { net = await netInfo(); } catch (e) {}
 	if (!authUrl) {
 		try {
 			const cfg = await (await import('/Javascript/global.js')).getIni('/settings/global.ini');
@@ -58,31 +42,6 @@ async function getToken(status) {
 	if (!result.success) throw new Error('驗證失敗：' + (result.message || ''));
 	finalToken = result.githubToken;
 	return finalToken;
-}
-
-function ghHeaders(pat) {
-	return {
-		"Authorization": `token ${pat}`,
-		"Accept": "application/vnd.github.v3+json",
-		"Content-Type": "application/json"
-	};
-}
-
-function toBase64Utf8(str) {
-	const bytes = new TextEncoder().encode(str);
-	let bin = "";
-	const CH = 0x8000;
-	for (let i = 0; i < bytes.length; i += CH) {
-		bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
-	}
-	return btoa(bin);
-}
-
-function fromBase64Utf8(b64) {
-	const bin = atob(b64.replace(/\s/g, ''));
-	const bytes = new Uint8Array(bin.length);
-	for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-	return new TextDecoder().decode(bytes);
 }
 
 async function ghRead(pat, repo, path) {
@@ -295,6 +254,23 @@ window.sendData = async function() {
 			ver.posts.count = Array.isArray(cur.data) ? cur.data.length : 0;
 			await ghWrite(pat, JSON_REPO, VERSION_PATH, ver, `Sync version (post)`, v.sha);
 		} catch (ve) { console.warn("版本戳寫入失敗（不影響本文）:", ve); }
+
+		// 自動更新 sitemap.xml（文章有變更時）
+		try {
+			const cfg = await (await import('/Javascript/global.js')).getIni('/settings/global.ini');
+			const svcPath = cfg?.JsonService ? String(cfg.JsonService).replace(/^\//, '') : '';
+			const postsRes = await ghRead(pat, JSON_REPO, JSON_PATH);
+			const posts = Array.isArray(postsRes.data) ? postsRes.data : [];
+			let services = null;
+			if (svcPath) {
+				const svcRes = await ghRead(pat, JSON_REPO, svcPath);
+				services = Array.isArray(svcRes.data) ? svcRes.data : null;
+			}
+			const { buildSitemapXml } = await import('/Javascript/sitemap.js');
+			const sitemapXml = buildSitemapXml(posts, services);
+			const smRes = await ghRead(pat, JSON_REPO, 'sitemap.xml');
+			await ghWrite(pat, JSON_REPO, 'sitemap.xml', sitemapXml, `inputData save sitemap`, smRes.sha);
+		} catch (se) { console.warn("sitemap 更新失敗（不影響本文）:", se); }
 
 		status.innerText = "✅ 已發佈！前台約 1~3 分鐘生效。";
 		status.style.color = "green";

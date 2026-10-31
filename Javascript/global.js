@@ -81,6 +81,32 @@ export function initGlobalHeader() {
  * 格式：{ posts: { updatedAt, count }, services: { updatedAt, count } }
  * 回傳正規化字串，抓不到回 null
  */
+/**
+ * 依 PostID + 發佈日期產生文章唯一 ID（前後台共用）
+ */
+export function getCombinedId(post) {
+	const pid = (post && post["PostID"] != null) ? String(post["PostID"]) : "0";
+	let d = null;
+	if (post) {
+		const raw = post["發佈日期"];
+		d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+	}
+	if (!d || isNaN(d.getTime())) return `${pid}_00000000000000`;
+	const pad = (n) => String(n).padStart(2, '0');
+	return `${pid}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+
+/**
+ * 格式化發佈日期（前後台共用）
+ */
+export function formatDate(raw) {
+	if (!raw && raw !== 0) return "無日期";
+	let d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+	if (isNaN(d.getTime())) return raw;
+	const pad = (n) => String(n).padStart(2, '0');
+	return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export async function getRemoteVersion() {
     try {
         const r = await fetch(`/Data/postFB.version.json?t=${Date.now()}`, { cache: 'no-store' });

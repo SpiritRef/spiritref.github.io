@@ -1,12 +1,12 @@
-import { getIni } from '/Javascript/global.js?v=20261011';
+import { getIni, getCombinedId } from '/Javascript/global.js?v=20261031';
+import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261031';
+import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261031';
 
 // 資料庫 = GitHub 靜態 JSON（不再經 GAS）
 // 文章 -> spiritref.github.io/Data/postFB.json
 // 服務 -> INI JsonService 指向的檔案
 
-const GITHUB_USER = 'SpiritRef';
 const GHOST_REPO = 'ghoststory';
-const JSON_REPO = 'spiritref.github.io';
 const VERSION_PATH = 'Data/postFB.version.json';
 
 let session = null;
@@ -70,34 +70,7 @@ async function getToken() {
 	return finalToken;
 }
 
-function ghHeaders(pat) {
-	return {
-		Authorization: `token ${pat}`,
-		Accept: 'application/vnd.github.v3+json',
-		'Content-Type': 'application/json'
-	};
-}
-
-function toB64(s) {
-	const b = new TextEncoder().encode(s);
-	let o = '';
-	for (let i = 0; i < b.length; i += 0x8000) o += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
-	return btoa(o);
-}
-
-function fromB64(b64) {
-	const bin = atob(b64.replace(/\s/g, ''));
-	const bytes = new Uint8Array(bin.length);
-	for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-	return new TextDecoder().decode(bytes);
-}
-
-async function fetchJson(url) {
-	const sep = url.includes('?') ? '&' : '?';
-	const r = await fetch(`${url}${sep}t=${Date.now()}`, { cache: 'no-store' });
-	if (!r.ok) throw new Error(`HTTP ${r.status}`);
-	return r.json();
-}
+// 共用工具已移至 /Javascript/adminCommon.js
 
 async function ensurePat() {
 	return getToken();
@@ -147,64 +120,7 @@ async function ghWriteFile(pat, repo, path, content, message) {
 	return true;
 }
 
-// 產生 sitemap.xml 內容（與 Tool/generate-sitemap.ps1 邏輯一致）
-function buildSitemapXml(posts, services) {
-	const base = 'https://spiritref.github.io';
-	const today = new Date().toISOString().slice(0, 10);
-	const entries = [];
-	const staticPages = [
-		{ loc: `${base}/services/`, changefreq: 'weekly', priority: '1.0' },
-		{ loc: `${base}/services/faq/`, changefreq: 'weekly', priority: '0.8' },
-		{ loc: `${base}/services/notices/`, changefreq: 'daily', priority: '0.8' },
-		{ loc: `${base}/services/consult.html`, changefreq: 'monthly', priority: '0.5' },
-		{ loc: `${base}/ghoststory/`, changefreq: 'daily', priority: '0.9' },
-		{ loc: `${base}/`, changefreq: 'weekly', priority: '0.8' }
-	];
-	for (const s of staticPages) entries.push({ ...s, lastmod: today });
-	// 文章頁
-	if (Array.isArray(posts)) {
-		for (const post of posts) {
-			const pid = post && post['PostID'] != null ? String(post['PostID']) : '0';
-			const raw = post ? (function(){const ks=Object.keys(post);for(const k of ks){if(typeof post[k]==='string' && /^\d{4}\/\d{2}\/\d{2}/.test(post[k])) return post[k];}return null;})() : null;
-			let ts = '0000';
-			let lastmod = today;
-			if (raw) {
-				const d = (typeof raw === 'number')
-					? new Date((raw - 25569) * 86400 * 1000)
-					: new Date(raw);
-				if (!isNaN(d.getTime())) {
-					const pad = (n) => String(n).padStart(2, '0');
-					ts = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-					lastmod = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-				}
-			}
-			const combined = `${pid}_${ts}`;
-			entries.push({ loc: `${base}/ghoststory/article/?id=${combined}`, lastmod, changefreq: 'monthly', priority: '0.6' });
-		}
-	}
-	// FAQ 個別頁面
-	if (Array.isArray(services)) {
-		for (const svc of services) {
-			const cat = svc ? (function(){const ks=Object.keys(svc);return ks.length? (svc[ks[0]] || '') : '';}()) : '';
-			if (String(cat).indexOf('\u5f59') === -1) continue;
-			const title = (function(){const ks=Object.keys(svc);return ks.length>1 ? (svc[ks[1]] || '') : '';}()) || '';
-			if (!title) continue;
-			const faqId = svc['ID'] || title;
-			entries.push({ loc: `${base}/services/faq/detail.html?id=${encodeURIComponent(faqId)}`, lastmod: today, changefreq: 'monthly', priority: '0.7' });
-		}
-	}
-	let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-	for (const e of entries) {
-		xml += '  <url>\n';
-		xml += `    <loc>${e.loc}</loc>\n`;
-		xml += `    <lastmod>${e.lastmod}</lastmod>\n`;
-		xml += `    <changefreq>${e.changefreq}</changefreq>\n`;
-		xml += `    <priority>${e.priority}</priority>\n`;
-		xml += '  </url>\n';
-	}
-	xml += '</urlset>\n';
-	return xml;
-}
+// buildSitemapXml 已移至 /Javascript/sitemap.js 共用
 
 async function bumpVersion(pat, section, count) {
 	try {
@@ -312,7 +228,10 @@ async function saveAll() {
 		if (savedPosts || savedServices) {
 			try {
 				const postsForSitemap = savedPosts || allPosts;
-				const servicesForSitemap = savedServices || null;
+				let servicesForSitemap = savedServices;
+				if (!servicesForSitemap && jsonSvcPath) {
+					try { servicesForSitemap = await fetchJson('/' + jsonSvcPath); } catch (e) { servicesForSitemap = null; }
+				}
 				const sitemapXml = buildSitemapXml(postsForSitemap, servicesForSitemap);
 				await ghWriteFile(pat, JSON_REPO, 'sitemap.xml', sitemapXml, 'Admin save sitemap');
 			} catch (e) { console.warn('sitemap 更新失敗（不影響本體）:', e); }
@@ -385,27 +304,7 @@ function deviceLabel() {
 	} catch (e) { return '未知裝置'; }
 }
 
-// IP＋地區（快取一整個分頁工作階段，失敗就只記裝置）
-async function netInfo() {
-	try {
-		const cached = sessionStorage.getItem('net_info');
-		if (cached) return JSON.parse(cached);
-		const ctl = new AbortController();
-		const timer = setTimeout(() => ctl.abort(), 4000);
-		const r = await fetch('https://ipapi.co/json/', { signal: ctl.signal });
-		clearTimeout(timer);
-		if (!r.ok) throw new Error('net ' + r.status);
-		const j = await r.json();
-		const info = {
-			ip: j.ip || 'unknown',
-			loc: [j.city, j.region, j.country_name].filter(Boolean).join('·') || 'unknown'
-		};
-		sessionStorage.setItem('net_info', JSON.stringify(info));
-		return info;
-	} catch (e) {
-		return { ip: 'unknown', loc: 'unknown' };
-	}
-}
+// netInfo 已移至 /Javascript/adminCommon.js
 
 function logOp(event, detail) {
 	const entry = { t: new Date().toISOString(), admin: session?.user?.email || '?', event, detail: detail || '', dev: deviceLabel(), ip: '', loc: '' };
@@ -415,7 +314,8 @@ function logOp(event, detail) {
 		localStorage.setItem('admin_oplog', JSON.stringify(arr.slice(0, 200)));
 	} catch (e) {}
 	renderOplog();
-	// IP 拿到後補上（本機＋遠端都更新）
+	pendingLogs.push(entry);
+	markDirty();
 	netInfo().then(info => {
 		entry.ip = info.ip;
 		entry.loc = info.loc;
@@ -427,12 +327,7 @@ function logOp(event, detail) {
 			}
 		} catch (e) {}
 		renderOplog();
-		pendingLogs.push(entry);
-		markDirty();
-	}).catch(() => {
-		pendingLogs.push(entry);
-		markDirty();
-	});
+	}).catch(() => {});
 }
 
 function oplogText(e) {
@@ -498,15 +393,7 @@ function updateTitleFilter() {
 	sel.innerHTML = '<option value="">📌 所有標題</option>' + titles.map(t => `<option value="${esc(t).replace(/"/g, '&quot;')}"${t === cur ? ' selected' : ''}>${esc(t)}</option>`).join('');
 }
 
-function getCombinedId(post) {
-	const pid = post["PostID"] || "0";
-	const d = (typeof post["發佈日期"] === 'number')
-		? new Date((post["發佈日期"] - 25569) * 86400 * 1000)
-		: new Date(post["發佈日期"]);
-	if (isNaN(d.getTime())) return `${pid}_00000000000000`;
-	const pad = (n) => String(n).padStart(2, '0');
-	return `${pid}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-}
+// getCombinedId 已移至 /Javascript/global.js 共用
 
 function postDateVal(p) {
 	return (typeof p["發佈日期"] === 'number') ? (p["發佈日期"] - 25569) * 86400 * 1000 : new Date(p["發佈日期"]).getTime();
@@ -797,6 +684,18 @@ function previewOnly(kind, idx) {
 	showPreview();
 }
 
+function copyUrlToClipboard(relativeUrl) {
+	if (!relativeUrl) return;
+	const absoluteUrl = new URL(relativeUrl, window.location.href).href;
+	navigator.clipboard.writeText(absoluteUrl).then(() => {
+		setStatus(`✅ 已複製：\n${absoluteUrl}`, 'green');
+		setTimeout(() => { setStatus('', ''); }, 3000);
+	}).catch(() => {
+		setStatus('❌ 複製失敗', 'red');
+		setTimeout(() => { setStatus('', ''); }, 3000);
+	});
+}
+
 function collectFields() {
 	const out = {};
 	$('modalFields').querySelectorAll('[data-k]').forEach(el => { out[el.dataset.k] = el.value; });
@@ -805,8 +704,12 @@ function collectFields() {
 
 function showPreview() {
 	const f = collectFields();
-	const imgs = String('https://spiritref.github.io/ghoststory/' + f['圖片網址'] || '').split(/\r?\n|\|/).filter(s => s.trim())
-		.map(s => `<img src="${esc(s.trim())}" style="max-width:100%;margin-top:8px;" onerror="this.style.display='none'">`).join('');
+	const rawImg = (f['圖片網址'] || '').trim();
+	const imgList = rawImg ? rawImg.split(/\r?\n|\|/).map(s => s.trim()).filter(Boolean) : [];
+	const imgs = imgList.map(s => {
+		const src = s.startsWith('http') ? s : `https://spiritref.github.io/ghoststory/${s}`;
+		return `<img src="${esc(src)}" style="max-width:100%;margin-top:8px;" onerror="this.style.display='none'">`;
+	}).join('');
 	$('previewBox').innerHTML = `<h3 style="margin:0 0 8px;">${esc(f['標題'] || '')}</h3><div>${esc(f['貼文內容'] || '').replace(/\n/g, '<br>')}</div>${imgs}`;
 	$('previewBox').style.display = 'block';
 }
@@ -1063,17 +966,7 @@ export async function initAdmin(sess) {
 		else if (b.dataset.act === 'preview') previewOnly('post', i);
 		else if (b.dataset.act === 'del') delItem('post', i, b);
 		else if (b.dataset.sact === 'copy') {
-			const relativeUrl = b.dataset.url;
-			if (!relativeUrl) return;
-			const absoluteUrl = new URL(relativeUrl, window.location.href).href;
-			navigator.clipboard.writeText(absoluteUrl).then(() => {
-				setStatus(`✅ 已複製：\n${absoluteUrl}`, 'green');
-				setTimeout(() => { setStatus('', ''); }, 3000);
-                
-			}).catch(err => {
-				setStatus('❌ 複製失敗', 'red');
-				setTimeout(() => { setStatus('', ''); }, 3000);
-			});
+			copyUrlToClipboard(b.dataset.url);
 		}
 	};
 	$('svcReload').onclick = loadSvc;
@@ -1123,17 +1016,7 @@ export async function initAdmin(sess) {
 		else if (b.dataset.sact === 'preview') previewOnly('svc', i);
 		else if (b.dataset.sact === 'del') delItem('svc', i, b);
 		else if (b.dataset.sact === 'copy') {
-			const relativeUrl = b.dataset.url;
-			if (!relativeUrl) return;
-			const absoluteUrl = new URL(relativeUrl, window.location.href).href;
-			navigator.clipboard.writeText(absoluteUrl).then(() => {
-				setStatus(`✅ 已複製：\n${absoluteUrl}`, 'green');
-				setTimeout(() => { setStatus('', ''); }, 3000);
-                
-			}).catch(err => {
-				setStatus('❌ 複製失敗', 'red');
-				setTimeout(() => { setStatus('', ''); }, 3000);
-			});
+			copyUrlToClipboard(b.dataset.url);
 		}
 	};
 	$('modalPreview').onclick = showPreview;
