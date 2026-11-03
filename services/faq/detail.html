@@ -47,7 +47,7 @@
     <p>&copy; 2026 鬼磕頭. All Rights Reserved.</p>
 </footer>
 <script type="module">
-    import * as Global from '/Javascript/global.js?v=20261011';
+    import * as Global from '/Javascript/global.js?v=20261104';
     const iniPath = '/settings/global.ini';
     async function init() {
         try {
@@ -64,19 +64,17 @@
         } catch (e) {}
         if (!Array.isArray(data)) data = [];
         const item = data.find(f => {
-            const ks = Object.keys(f);
-            const fid = f['ID'] || (ks.length > 1 ? f[ks[1]] : '');
-            const title = ks.length > 1 ? f[ks[1]] : '';
+            const fid = f['ID'] || f['標題'] || '';
+            const title = f['標題'] || '';
             return String(fid) === String(id || '') || String(title) === String(id || '');
         });
         if (!item) {
             container.innerHTML = '<div class="notice-item"><p>找不到此常見問題。</p></div>';
             return;
         }
-        const ks = Object.keys(item);
-        const q = ks.length > 1 ? (item[ks[1]] || '') : '';
-        const a = ks.length > 2 ? (item[ks[2]] || '暫無內容') : '暫無內容';
-        const posturl = ks.length > 3 ? (item[ks[3]] || '') : '';
+        const q = item['標題'] || '';
+        const a = item['貼文內容'] || item['內容'] || '暫無內容';
+        const posturl = item['連結'] || item['貼文連結'] || '';
         let urlArray = [];
         if (Array.isArray(posturl)) urlArray = posturl;
         else if (typeof posturl === 'string' && posturl.trim() !== '') urlArray = posturl.split(/[ ,\n]+/).filter(u => u.trim() !== '');

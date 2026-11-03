@@ -142,7 +142,7 @@
 </footer>
 	
 <script type="module">
-	import * as Global from '/Javascript/global.js?v=20261011';
+	import * as Global from '/Javascript/global.js?v=20261104';
 
     let allFAQs = [];
     let currentPage = 1;
@@ -259,10 +259,9 @@
 	
 	    // ✨ 核心修正：計算跨頁連續編號 (start + index + 1)
 	    listContent.innerHTML = pagedData.map((item, index) => {
-	        const ks = Object.keys(item);
-	        const q = ks.length > 1 ? item[ks[1]] : "";
-	        const a = ks.length > 2 ? (item[ks[2]] || "no content") : "no content";
-	        const posturl = ks.length > 3 ? (item[ks[3]] || "") : "";
+	        const q = item['標題'] || "";
+	        const a = item['貼文內容'] || item['內容'] || "no content";
+	        const posturl = item['連結'] || item['貼文連結'] || "";
 	        const qNumber = start + index + 1; 
 	        
 	        // 處理多個連結：支援陣列，或是以逗號、換行、空格分隔的字串
@@ -325,8 +324,8 @@
     window.addEventListener('DOMContentLoaded', init);
 </script>
 
-<script type="module" src="/Javascript/global.js?v=20261011"></script>
-<script src="../Javascript/cloud.js?v=20261012"></script>
+<script type="module" src="/Javascript/global.js?v=20261104"></script>
+<script src="../Javascript/cloud.js?v=20261104"></script>
 
 </body>
 </html>
