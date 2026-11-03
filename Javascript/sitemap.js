@@ -36,11 +36,11 @@ export function buildSitemapXml(posts, services) {
 	// FAQ 個別頁面
 	if (Array.isArray(services)) {
 		for (const svc of services) {
-			const cat = svc ? (function(){const ks=Object.keys(svc);return ks.length? (svc[ks[0]] || '') : '';}()) : '';
-			if (String(cat).indexOf('\u5f59') === -1) continue;
-			const title = (function(){const ks=Object.keys(svc);return ks.length>1 ? (svc[ks[1]] || '') : '';}()) || '';
+			const cat = svc ? (svc['分類'] != null ? String(svc['分類']) : (function(){const ks=Object.keys(svc);return ks.length? (svc[ks[0]] || '') : '';}())) : '';
+			if (String(cat).indexOf('彙') === -1) continue;
+			const title = svc && svc['標題'] != null ? String(svc['標題']) : ((function(){const ks=Object.keys(svc);return ks.length>1 ? (svc[ks[1]] || '') : '';}()) || '');
 			if (!title) continue;
-			const faqId = svc['ID'] || title;
+			const faqId = (svc && svc['ID'] != null) ? svc['ID'] : title;
 			entries.push({ loc: `${base}/services/faq/detail.html?id=${encodeURIComponent(faqId)}`, lastmod: today, changefreq: 'monthly', priority: '0.7' });
 		}
 	}

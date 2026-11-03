@@ -216,7 +216,7 @@
         if (!data || !Array.isArray(data)) return;
 
         // 【核心篩選】只抓取「分類」為「常見問題」的資料，並按日期排序
-        allFAQs = data.filter(item => { const ks = Object.keys(item); const cat = ks.length ? item[ks[0]] : ''; return String(cat).indexOf('\u5f59') !== -1; }).sort((a, b) => { const ka = Object.keys(a); const kb = Object.keys(b); const ia = (a['ID'] || (ka.length>1?a[ka[1]]:'')); const ib = (b['ID'] || (kb.length>1?b[kb[1]]:'')); return String(ia).localeCompare(String(ib)); });
+        allFAQs = data.filter(item => String(item['分類'] || '').indexOf('彙') !== -1).sort((a, b) => String(a['ID'] || '').localeCompare(String(b['ID'] || '')));
 
         updateUI();
     }
@@ -229,17 +229,17 @@
 
     // 阿拉伯數字轉國字（1→一、10→十、11→十一、21→二十一、101→一百零一）
     function cnNum(n) {
-        const d = ['\u96f6','\u4e00','\u4e8c','\u4e09','\u56db','\u4e94','\u516d','\u4e03','\u516b','\u4e5d'];
+        const d = ['零','一','二','三','四','五','六','七','八','九'];
         n = Number(n);
         if (!n || n < 0) return '';
         if (n < 10) return d[n];
-        if (n < 20) return '\u5341' + (n % 10 ? d[n % 10] : '');
-        if (n < 100) return d[Math.floor(n / 10)] + '\u5341' + (n % 10 ? d[n % 10] : '');
+        if (n < 20) return '十' + (n % 10 ? d[n % 10] : '');
+        if (n < 100) return d[Math.floor(n / 10)] + '十' + (n % 10 ? d[n % 10] : '');
         const h = Math.floor(n / 100), r = n % 100;
-        let str = d[h] + '\u767e';
+        let str = d[h] + '百';
         if (!r) return str;
-        if (r < 10) return str + '\u96f6' + d[r];
-        if (r < 20) return str + '\u4e00' + cnNum(r);
+        if (r < 10) return str + '零' + d[r];
+        if (r < 20) return str + '一' + cnNum(r);
         return str + cnNum(r);
     }
 

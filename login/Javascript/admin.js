@@ -151,7 +151,7 @@ function matchItem(p, m) {
 	if (!m) return false;
 	if (m.PostID !== undefined) return String(p['PostID']) === String(m.PostID);
 	if (m.ID !== undefined) return p['ID'] === m.ID;
-	if (m.keyTitle !== undefined) return p['\u6a19\u984c'] === m.keyTitle;
+	if (m.keyTitle !== undefined) return p['標題'] === m.keyTitle;
 	return false;
 }
 
@@ -175,7 +175,17 @@ function applyOps(arr, ops) {
 			const maxId = out.reduce((m, p) => Math.max(m, Number(p.PostID) || 0), 0);
 			const e = { ...o.entry };
 			if (e.PostID === undefined && out.some(p => p.PostID !== undefined)) e.PostID = maxId + 1;
-			out.push(e);
+			// 服務條目：插入到同分類的最後一筆之後，避免 JSON 檔順序錯亂
+			if (e['分類'] !== undefined) {
+				let lastIdx = -1;
+				for (let i = 0; i < out.length; i++) {
+					if (out[i] && out[i]['分類'] === e['分類']) lastIdx = i;
+				}
+				if (lastIdx >= 0) out.splice(lastIdx + 1, 0, e);
+				else out.push(e);
+			} else {
+				out.push(e);
+			}
 		} else if (o.type === 'update') {
 			out = out.map(p => matchItem(p, o.match) ? { ...p, ...o.fields } : p);
 		} else if (o.type === 'delete') {
@@ -750,7 +760,7 @@ async function saveEdit() {
 		} else {
 			const cat = svcCat;
 			if (editing.idx === -1) {
-				const entry = { "ID": generateSvcId(cat, allSvc), "\u5206\u985e": cat, "\u6a19\u984c": f["\u6a19\u984c"] || "", "\u8cbc\u6587\u5167\u5bb9": f["\u8cbc\u6587\u5167\u5bb9"] || "", "\u9023\u7d50": f["\u9023\u7d50"] || "" };
+				const entry = { "分類": cat, "標題": f["標題"] || "", "貼文內容": f["貼文內容"] || "", "連結": f["連結"] || "", "ID": generateSvcId(cat, allSvc) };
 				stage('services', { type: 'append', entry });
 				logOp('新增服務內容', `${cat} ${f['標題'] || ''}`);
 				allSvc.push(entry);
