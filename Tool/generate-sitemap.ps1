@@ -1,5 +1,5 @@
 # generate-sitemap.ps1
-# Auto-generate sitemap.xml from Data\postFB.json (+ Data\Services.json for FAQ pages)
+# Auto-generate sitemap.xml from Data\postFB.json (+ Data\Services.json for Compendium pages)
 # Usage:
 #   double-click Tool\run-sitemap.bat
 #   or: powershell -ExecutionPolicy Bypass -File .\Tool\generate-sitemap.ps1
@@ -23,7 +23,7 @@ $entries = @()
 # Static public pages
 $static = @(
     @{ loc="$base/services/"; lastmod=$today; changefreq="weekly"; priority="1.0" },
-    @{ loc="$base/services/faq/"; lastmod=$today; changefreq="weekly"; priority="0.8" },
+    @{ loc="$base/services/Compendium/"; lastmod=$today; changefreq="weekly"; priority="0.8" },
     @{ loc="$base/services/notices/"; lastmod=$today; changefreq="daily"; priority="0.8" },
     @{ loc="$base/services/consult.html"; lastmod=$today; changefreq="monthly"; priority="0.5" },
     @{ loc="$base/ghoststory/"; lastmod=$today; changefreq="daily"; priority="0.9" },
@@ -66,7 +66,7 @@ foreach ($post in $data) {
     $entries += $entry
 }
 
-# FAQ individual pages (from Data\Services.json, category contains '彙典')
+# Compendium individual pages (from Data\Services.json, category contains '彙典')
 $svcPath = Join-Path $root "Data\Services.json"
 if (Test-Path $svcPath) {
     $svcData = Get-Content -Raw -Encoding UTF8 $svcPath | ConvertFrom-Json
@@ -80,10 +80,10 @@ if (Test-Path $svcPath) {
             if ($pr.Name -eq 'ID') { $id = [string]$pr.Value }
         }
         $title = if ($props.Count -gt 1) { [string]$props[1].Value } else { "" }
-        $faqId = if ($id) { $id } else { $title }
-        if (-not $faqId) { continue }
-        $encoded = [System.Uri]::EscapeDataString($faqId)
-        $url = "$base/services/faq/detail.html?id=$encoded"
+        $compendiumId = if ($id) { $id } else { $title }
+        if (-not $compendiumId) { continue }
+        $encoded = [System.Uri]::EscapeDataString($compendiumId)
+        $url = "$base/services/Compendium/detail.html?id=$encoded"
         $entry = @{ loc=$url; lastmod=$today; changefreq="monthly"; priority="0.7" }
         $entries += $entry
     }

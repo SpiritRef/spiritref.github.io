@@ -50,7 +50,7 @@
 
 ```ini
 # MENU_DATA 格式：顯示名稱,連結網址,圖示符號|...
-MENU_DATA=專業服務,/services/,📜|視覺紀錄,/services/#visual-records,📽|超自然現象彙典,/services/#faq-section,💡|聯絡方式,/services/#contact,👤|靈異日誌,/ghoststory/,📖
+MENU_DATA=專業服務,/services/,📜|視覺紀錄,/services/#visual-records,📽|超自然現象彙典,/services/#compendium-section,💡|聯絡方式,/services/#contact,👤|靈異日誌,/ghoststory/,📖
 
 # 靜態 JSON 資料庫路徑（資料庫 = GitHub 上的 JSON 檔）
 JsonData=/Data/postFB.json

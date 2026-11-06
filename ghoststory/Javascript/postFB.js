@@ -148,14 +148,15 @@ function updateDisplay() {
     const order = document.getElementById('sortOrder')?.value || "desc";
     const sizeValue = document.getElementById('pageSize')?.value || "20";
     
-    // A. 執行過濾
+    // A. 執行過濾（標題為公告者不顯示）
     filteredPosts = allPosts.filter(p => {
         const content = (p["貼文內容"] || "").toLowerCase();
         const title = (p["標題"] || "").toLowerCase();
+        const isAnnouncement = String(p["標題"] || "").includes("公告");
         const contentMatch = content.includes(term) || title.includes(term);
         const titleMatch = selectedTitle === "" || p["標題"] === selectedTitle;
         const favMatch = !showOnlyFavs || favorites.includes(getCombinedId(p));
-        return contentMatch && titleMatch && favMatch;
+        return !isAnnouncement && contentMatch && titleMatch && favMatch;
     });
 
     // B. 執行排序（置頂永遠在前，再按選擇的順序）
@@ -259,7 +260,7 @@ function updateTitleDropdown() {
     if (!titleFilter) return;
     const currentVal = titleFilter.value;
     titleFilter.innerHTML = '<option value="">📌 所有主題標題</option>';
-    const titles = [...new Set(allPosts.map(p => p["標題"]).filter(t => t && String(t).trim() !== ""))];
+    const titles = [...new Set(allPosts.map(p => p["標題"]).filter(t => t && String(t).trim() !== "" && !String(t).includes("公告")))];
     titles.sort().forEach(title => {
         const opt = document.createElement('option');
         opt.value = title; opt.innerText = title;

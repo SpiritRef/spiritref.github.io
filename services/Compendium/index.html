@@ -18,7 +18,7 @@
     <meta property="og:title" content="超自然現象彙典 | 鬼磕頭">
     <meta property="og:description" content="針對靈學服務、驅鬼儀式及常見疑問的專業解答。">
     <meta property="og:image" content="https://spiritref.github.io/GhostKowtow.jpg">
-    <meta property="og:url" content="https://spiritref.github.io/services/faq/">
+    <meta property="og:url" content="https://spiritref.github.io/services/Compendium/">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="鬼磕頭">
 
@@ -39,10 +39,10 @@
         .notice-item:hover { box-shadow: 0 6px 16px rgba(139, 115, 85, 0.15); transform: translateY(-2px); }
         .notice-item:last-child { margin-bottom: 0; }
 
-        .faq-q { font-weight: 900; font-size: 1.1em; color: #4a2e1b; margin-bottom: 2px; line-height: 1.4; }
-        .faq-a { color: #5c4332; padding-left: 20px; font-weight: 600; white-space: pre-line; line-height: 1.6; }
-		.faq-links { margin-top: 4px; padding-top: 4px;border-top: 1px dashed #2a2a2d;font-size: 0.9rem;color: #88888d;display: flex;flex-wrap: wrap;align-items: center;gap: 8px;}
-		.faq-links a { display: inline-flex; 
+        .compendium-q { font-weight: 900; font-size: 1.1em; color: #4a2e1b; margin-bottom: 2px; line-height: 1.4; }
+        .compendium-a { color: #5c4332; padding-left: 20px; font-weight: 600; white-space: pre-line; line-height: 1.6; }
+		.compendium-links { margin-top: 4px; padding-top: 4px;border-top: 1px dashed #2a2a2d;font-size: 0.9rem;color: #88888d;display: flex;flex-wrap: wrap;align-items: center;gap: 8px;}
+		.compendium-links a { display: inline-flex; 
 			align-items: center;
 			justify-content: center;
 			text-decoration: none; 
@@ -67,7 +67,7 @@
 			font-family: inherit;     /* 關鍵：強制按鈕繼承網頁主字體，否則 button 字體常會縮小或變形 */
 			line-height: 1; 
 		}
-		.faq-links a:hover { background: #000000; color: #ffc107; transform: scale(1.05); }
+		.compendium-links a:hover { background: #000000; color: #ffc107; transform: scale(1.05); }
         .date-label { display: block; color: #999; font-size: 0.8rem; margin-bottom: 5px; }
 
         .pagination { margin-top: 40px; padding-top: 20px; border-top: 1px solid #f0f0f0; display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap; row-gap: 10px; color: #555555; font-weight: bold; }
@@ -81,7 +81,7 @@
         @media (max-width: 600px) {
             body { padding: 10px; }
             .list-container { padding: 15px; }
-            .faq-a { padding-left: 15px; }
+            .compendium-a { padding-left: 15px; }
             .pagination { gap: 6px; }
             .page-btn { padding: 6px 10px; font-size: 0.85rem; }
             .jump-select { padding: 4px 6px; font-size: 0.85rem; max-width: 64px; }
@@ -144,7 +144,7 @@
 <script type="module">
 	import * as Global from '/Javascript/global.js?v=20261104';
 
-    let allFAQs = [];
+    let allCompendiums = [];
     let currentPage = 1;
     let pageSize = 10;
     let jsonServicePath = "";
@@ -169,7 +169,7 @@
                 jsonServicePath = config.JsonService || "";
 
                 // 2. 靜態補位 (若快取無資料，則讀取靜態 JSON)
-                if (allFAQs.length === 0 && jsonServicePath) {
+                if (allCompendiums.length === 0 && jsonServicePath) {
                     await fetchStaticJson(jsonServicePath);
                 }
 
@@ -197,7 +197,7 @@
         try { remoteVer = await Global.getRemoteVersion(); } catch (e) {}
         if (!remoteVer) return;
         try {
-            if (localStorage.getItem('data_ver') === remoteVer && allFAQs.length > 0) return;
+            if (localStorage.getItem('data_ver') === remoteVer && allCompendiums.length > 0) return;
         } catch (e) {}
         if (!jsonServicePath) return;
         try {
@@ -216,13 +216,13 @@
         if (!data || !Array.isArray(data)) return;
 
         // 【核心篩選】只抓取「分類」為「常見問題」的資料，並按日期排序
-        allFAQs = data.filter(item => String(item['分類'] || '').indexOf('彙') !== -1).sort((a, b) => String(a['ID'] || '').localeCompare(String(b['ID'] || '')));
+        allCompendiums = data.filter(item => String(item['分類'] || '').indexOf('彙') !== -1).sort((a, b) => String(a['ID'] || '').localeCompare(String(b['ID'] || '')));
 
         updateUI();
     }
 
     function updateUI() {
-        document.getElementById('totalCount').innerText = `共 ${allFAQs.length} 筆`;
+        document.getElementById('totalCount').innerText = `共 ${allCompendiums.length} 筆`;
         render();
         syncPageUrl(currentPage);
     }
@@ -250,9 +250,9 @@
 	    const listContent = document.getElementById('list-content');
 	    const start = (currentPage - 1) * pageSize;
 	    const end = start + pageSize;
-	    const pagedData = allFAQs.slice(start, end);
+	    const pagedData = allCompendiums.slice(start, end);
 	
-	    if (allFAQs.length === 0) {
+	    if (allCompendiums.length === 0) {
 	        listContent.innerHTML = "目前暫無符合條件的常見問題項目。";
 	        return;
 	    }
@@ -275,26 +275,26 @@
 	        
 	        // 將連結陣列轉換為 HTML `<a>` 標籤，並以 <br> 換行
 	        const linksHtml = urlArray.length > 0 
-				? `<div class="faq-links"><span>相關文章：</span>${urlArray.map((url, i) => `<a href="${url}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`).join('')}</div>` 
+				? `<div class="compendium-links"><span>相關文章：</span>${urlArray.map((url, i) => `<a href="${url}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`).join('')}</div>` 
 				: "";
 	
 	        return `
 	            <div class="notice-item">
-	                <div class="faq-q">第${cnNum(qNumber)}章 <a href="detail.html?id=${encodeURIComponent(item.ID || q)}" style="color:inherit;text-decoration:underline;">${q}</a></div>
-	                <div class="faq-a">
-						<div class="faq-answer-text">${a}</div>
+	                <div class="compendium-q">第${cnNum(qNumber)}章 <a href="detail.html?id=${encodeURIComponent(item.ID || q)}" style="color:inherit;text-decoration:underline;">${q}</a></div>
+	                <div class="compendium-a">
+						<div class="compendium-answer-text">${a}</div>
 						${linksHtml}
 					</div>
 	            </div>
 	        `;
 	    }).join('');
 	
-	    const maxPage = Math.ceil(allFAQs.length / pageSize) || 1;
+	    const maxPage = Math.ceil(allCompendiums.length / pageSize) || 1;
 	    
 	    // 更新頁碼文字
 	    document.getElementById('pageInfo').innerText = ` / ${maxPage} 頁`;
 	    document.getElementById('prevBtn').disabled = currentPage === 1;
-	    document.getElementById('nextBtn').disabled = end >= allFAQs.length;
+	    document.getElementById('nextBtn').disabled = end >= allCompendiums.length;
 	
 	    // ✨ 更新跳頁選單內容
 	    const pageJump = document.getElementById('pageJump');
@@ -319,7 +319,7 @@
 	// 跳至特定頁數
 	window.jumpToPage = () => { currentPage = parseInt(document.getElementById('pageJump').value); render(); syncPageUrl(currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     window.prevPage = () => { if(currentPage > 1) { currentPage--; render(); syncPageUrl(currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
-    window.nextPage = () => { if(currentPage * pageSize < allFAQs.length) { currentPage++; render(); syncPageUrl(currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
+    window.nextPage = () => { if(currentPage * pageSize < allCompendiums.length) { currentPage++; render(); syncPageUrl(currentPage); window.scrollTo({ top: 0, behavior: 'smooth' }); } };
 
     window.addEventListener('DOMContentLoaded', init);
 </script>

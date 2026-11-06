@@ -7,7 +7,7 @@ const iniPath = '/settings/global.ini';
 let allNotices = [];
 let allServices = [];
 let allVisualRecords = [];
-let allFAQs = [];
+let allCompendiums = [];
 
 /**
  * 初始化應用程式（資料庫 = GitHub 靜態 JSON）
@@ -62,7 +62,7 @@ function loadCache() {
 }
 
 /**
- * 核心邏輯：異步處理服務資料，達成「服務」與「FAQ」競爭渲染
+ * 核心邏輯：異步處理服務資料，達成「服務」與「Compendium」競爭渲染
  */
 function processServiceData(data) {
     // 💡 任務 1：處理專業服務 (包含：專業服務)
@@ -72,11 +72,11 @@ function processServiceData(data) {
         console.log("🛠️ 專業服務已渲染");
     });
 
-    // 💡 任務 2：處理 FAQ (分類：超自然現象彙典)
+    // 💡 任務 2：處理 Compendium (分類：超自然現象彙典)
     Promise.resolve().then(() => {
-        allFAQs = data.filter(item => String(item["分類"] || "") === "超自然現象彙典");
-        renderFAQ();
-        console.log("❓ FAQ 已渲染");
+        allCompendiums = data.filter(item => String(item["分類"] || "") === "超自然現象彙典");
+        renderCompendium();
+        console.log("❓ Compendium 已渲染");
     });
     
     // 💡 任務 3：處理視覺紀錄 (分類：視覺紀錄)
@@ -185,16 +185,16 @@ function cnNum(n) {
     return s + cnNum(r);
 }
 
-function renderFAQ() {
-    const content = document.getElementById('faq-content');
+function renderCompendium() {
+    const content = document.getElementById('compendium-content');
     if (!content) return;
-    if (allFAQs.length === 0) {
+    if (allCompendiums.length === 0) {
         content.innerText = "目前暫無新增超自然現象。";
         return;
     }
 
     const pageSize = 5; // 每頁/每次推播 5 篇
-    const totalCount = allFAQs.length;
+    const totalCount = allCompendiums.length;
     const maxPage = Math.ceil(totalCount / pageSize) || 1;
 
     // 💡 核心輪播邏輯：根據今天是幾號 (1~31) 計算要顯示第幾頁
@@ -204,7 +204,7 @@ function renderFAQ() {
 
     const start = (targetPage - 1) * pageSize;
     const end = start + pageSize;
-    const displayList = allFAQs.slice(start, end);
+    const displayList = allCompendiums.slice(start, end);
 
     content.innerHTML = displayList.map((item, index) => {
         const q = item["標題"] || "超自然現象彙典";
@@ -224,7 +224,7 @@ function renderFAQ() {
         
         // 將連結陣列轉換為 HTML `<a>` 標籤
         const linksHtml = urlArray.length > 0 
-            ? `<div class="faq-links"><span>相關文章：</span>
+            ? `<div class="compendium-links"><span>相關文章：</span>
                  ${urlArray.map((url, i) => `<a href="${url}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`).join('\t')}
                </div>` 
             : "";
