@@ -274,12 +274,10 @@
 			}
 			return `
 				<a href="${artUrl}" style="text-decoration:none;color:inherit;display:block;">
-				<div class="item" style="display:flex;align-items:flex-start;cursor:pointer;">
-					${imgHtml}
-					<div style="flex:1;min-width:0;">
-						<div class="date">${pin}[${dateStr}]</div>
-						<div class="content">${Global.linkify(i["貼文內容"] || i["內容"] || "")}</div>
-					</div>
+				<div class="item" style="cursor:pointer;">
+					<div class="date">${pin}[${dateStr}]</div>
+					<div class="content">${Global.linkify(i["貼文內容"] || i["內容"] || "")}</div>
+					${imgHtml ? `<div style="margin-top:10px;">${imgHtml.replace('margin-right:12px;','')}</div>` : ''}
 				</div>
 				</a>
 			`;
