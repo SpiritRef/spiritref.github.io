@@ -71,7 +71,7 @@ function updateTime() {
 	const pad = (n) => n.toString().padStart(2, '0');
 	const dateInput = document.getElementById('date');
 	if (dateInput) {
-		dateInput.value = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+		dateInput.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 	}
 }
 
@@ -215,7 +215,20 @@ window.sendData = async function() {
 
 	const title = document.getElementById('title').value.trim();
 	const content = document.getElementById('content').value;
-	const dateVal = document.getElementById('date').value.trim();
+	let rawDate = document.getElementById('date').value.trim();
+	let dateVal = rawDate;
+	if (rawDate) {
+		const d = new Date(rawDate);
+		if (!isNaN(d.getTime())) {
+			const pad = (n) => n.toString().padStart(2, '0');
+			dateVal = `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+		}
+	}
+	if (!dateVal) {
+		const now = new Date();
+		const pad = (n) => n.toString().padStart(2, '0');
+		dateVal = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+	}
 	if (!title && !content.trim()) { alert("標題和內容不能全空！"); return; }
 
 	status.innerText = "🚀 正在寫入 GitHub...";

@@ -436,7 +436,8 @@ function renderPosts() {
 	if (postPage > maxPage) postPage = maxPage;
 	if (postPage < 1) postPage = 1;
 	const page = list.slice((postPage - 1) * PAGE, postPage * PAGE);
-	$('postCount').innerText = `共 ${list.length} 筆`;
+	const scheduledCount = list.filter(p => postDateVal(p) > Date.now()).length;
+	$('postCount').innerText = `共 ${list.length} 筆（預約 ${scheduledCount} 筆）`;
 	$('postPageInfo').innerText = `/${maxPage}`;
 	const jump = $('postJump');
 	if (jump) {
