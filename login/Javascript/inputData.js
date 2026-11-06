@@ -215,6 +215,7 @@ window.sendData = async function() {
 
 	const title = document.getElementById('title').value.trim();
 	const content = document.getElementById('content').value;
+	const picVal = document.getElementById('pic').value.trim();
 	let rawDate = document.getElementById('date').value.trim();
 	let dateVal = rawDate;
 	if (rawDate) {
