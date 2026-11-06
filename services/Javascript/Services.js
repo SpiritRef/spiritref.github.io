@@ -9,7 +9,7 @@ let allServices = [];
 
 function parseServiceDate(raw) {
     if (typeof raw === 'number') return new Date((raw - 25569) * 86400 * 1000);
-    if (raw) return new Date(raw);
+    if (raw) return new Date(String(raw).replace(/\//g, '-').replace(' ', 'T'));
     return new Date(0);
 }
 function isServicePublished(item) {
@@ -154,7 +154,7 @@ async function refreshFromVersion() {
  */
 function serviceDateVal(x) {
     const raw = x && x["發佈日期"];
-    const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+    const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(String(raw).replace(/\//g, '-').replace(' ', 'T'));
     return isNaN(d.getTime()) ? 0 : d.getTime();
 }
 function renderNotices() {

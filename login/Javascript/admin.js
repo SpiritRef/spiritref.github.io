@@ -411,7 +411,7 @@ function updateTitleFilter() {
 
 function postDateVal(p) {
 	const raw = p && p["發佈日期"];
-	const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+	const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(String(raw).replace(/\//g, '-').replace(' ', 'T'));
 	return isNaN(d.getTime()) ? 0 : d.getTime();
 }
 

@@ -131,7 +131,7 @@
 	let allNotices = [];
 	function isPublishedNotice(i) {
 		const raw = i && i["發佈日期"];
-		const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+		const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(String(raw).replace(/\//g, '-').replace(' ', 'T'));
 		if (isNaN(d.getTime())) return true;
 		return d.getTime() <= Date.now();
 	}
@@ -192,7 +192,7 @@
 				// 過濾與排序（置頂優先，再按日期倒序）
 				function noticeDateVal(x) {
 					const raw = x && x["發佈日期"];
-					const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+					const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(String(raw).replace(/\//g, '-').replace(' ', 'T'));
 					return isNaN(d.getTime()) ? 0 : d.getTime();
 				}
 				const filtered = data.filter(i => String(i["標題"] || "").includes("公告") && isPublishedNotice(i))

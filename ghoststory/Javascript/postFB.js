@@ -7,7 +7,7 @@ let filteredPosts = [];
 function parsePostDate(p) {
     const raw = p && p["發佈日期"];
     if (typeof raw === 'number') return new Date((raw - 25569) * 86400 * 1000);
-    if (raw) return new Date(raw);
+    if (raw) return new Date(String(raw).replace(/\//g, '-').replace(' ', 'T'));
     return new Date(0);
 }
 function isPublished(p) {
