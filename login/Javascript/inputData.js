@@ -215,19 +215,7 @@ window.sendData = async function() {
 
 	const title = document.getElementById('title').value.trim();
 	const content = document.getElementById('content').value;
-	const schedule = document.getElementById('schedule') && document.getElementById('schedule').checked;
-	let dateVal = document.getElementById('date').value.trim();
-	if (!schedule) {
-		const now = new Date();
-		const pad = (n) => n.toString().padStart(2, '0');
-		dateVal = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-		document.getElementById('date').value = dateVal;
-	} else if (!dateVal) {
-		const future = new Date(Date.now() + 60 * 60 * 1000);
-		const pad = (n) => n.toString().padStart(2, '0');
-		dateVal = `${future.getFullYear()}/${pad(future.getMonth()+1)}/${pad(future.getDate())} ${pad(future.getHours())}:${pad(future.getMinutes())}:${pad(future.getSeconds())}`;
-		document.getElementById('date').value = dateVal;
-	}
+	const dateVal = document.getElementById('date').value.trim();
 	if (!title && !content.trim()) { alert("標題和內容不能全空！"); return; }
 
 	status.innerText = "🚀 正在寫入 GitHub...";
