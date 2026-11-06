@@ -260,7 +260,7 @@
 	    // ✨ 核心修正：計算跨頁連續編號 (start + index + 1)
 	    listContent.innerHTML = pagedData.map((item, index) => {
 	        const q = item['標題'] || "";
-	        const a = item['貼文內容'] || item['內容'] || "no content";
+	        const a = Global.linkify(item['貼文內容'] || item['內容'] || "no content").replace(/\n/g, '<br>');
 	        const posturl = item['連結'] || item['貼文連結'] || "";
 	        const qNumber = start + index + 1; 
 	        

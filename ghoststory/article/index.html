@@ -140,7 +140,7 @@
 </footer>
 
 <script type="module">
-    import { getIni, getCombinedId, formatDate } from '/Javascript/global.js?v=20261031';
+    import { getIni, getCombinedId, formatDate, linkify } from '/Javascript/global.js?v=20261031';
 
     window.toggleMenu = function() {
         const menu = document.getElementById('menuContainer');
@@ -207,14 +207,14 @@
         }
         if (post) {
             if (document.getElementById('art-title').innerText === post["標題"]) {
-                document.getElementById('art-body').innerText = post["貼文內容"];
-                return; 
+                document.getElementById('art-body').innerHTML = linkify(post["貼文內容"]);
+                return;
             }
 
             document.title = `${post["標題"]} | 鬼磕頭日誌`;
             document.getElementById('art-title').innerText = post["標題"];
             document.getElementById('art-date').innerText = formatDate(post["發佈日期"]);
-            document.getElementById('art-body').innerText = post["貼文內容"];
+            document.getElementById('art-body').innerHTML = linkify(post["貼文內容"]);
             
             const imgBox = document.getElementById('art-images');
             imgBox.innerHTML = '';

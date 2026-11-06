@@ -176,9 +176,12 @@ function updateDisplay() {
     filteredPosts.sort((a, b) => {
         const pin = ((b["置頂"] === true) - (a["置頂"] === true));
         if (pin !== 0) return pin;
-        const dA = (typeof a["發佈日期"] === 'number') ? (a["發佈日期"] - 25569) : new Date(a["發佈日期"]).getTime();
-        const dB = (typeof b["發佈日期"] === 'number') ? (b["發佈日期"] - 25569) : new Date(b["發佈日期"]).getTime();
-        return order === 'asc' ? dA - dB : dB - dA;
+        const toMs = (x) => (typeof x["發佈日期"] === 'number') ? (x["發佈日期"] - 25569) * 86400 * 1000 : new Date(x["發佈日期"]).getTime();
+        const dA = isNaN(toMs(a)) ? 0 : toMs(a);
+        const dB = isNaN(toMs(b)) ? 0 : toMs(b);
+        const dateCmp = order === 'asc' ? dA - dB : dB - dA;
+        if (dateCmp !== 0) return dateCmp;
+        return order === 'asc' ? (Number(a["PostID"]) || 0) - (Number(b["PostID"]) || 0) : (Number(b["PostID"]) || 0) - (Number(a["PostID"]) || 0);
     });
 
     // C. 分頁計算

@@ -152,6 +152,11 @@ async function refreshFromVersion() {
 /**
  * 渲染公告列表
  */
+function serviceDateVal(x) {
+    const raw = x && x["發佈日期"];
+    const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+}
 function renderNotices() {
     const content = document.getElementById('announcement-content');
     if (!content) return;
@@ -160,18 +165,24 @@ function renderNotices() {
         return;
     }
     // 置頂優先，再按日期倒序
-    const sorted = [...allNotices].sort((a, b) =>
-        ((b["置頂"] === true) - (a["置頂"] === true)) || (new Date(b["發佈日期"]) - new Date(a["發佈日期"])));
+    const sorted = [...allNotices].sort((a, b) => {
+        const pin = ((b["置頂"] === true) - (a["置頂"] === true));
+        if (pin !== 0) return pin;
+        const dd = serviceDateVal(b) - serviceDateVal(a);
+        if (dd !== 0) return dd;
+        return (Number(b["PostID"]) || 0) - (Number(a["PostID"]) || 0);
+    });
     const displayList = sorted.slice(0, 5);
     content.innerHTML = displayList.map(item => {
         const text = item["貼文內容"] || item["內容"] || "";
         const summary = text.length > 50 ? text.substring(0, 50) + "..." : text;
+        const summaryHtml = Global.linkify(summary);
         const date = item["發佈日期"] ? new Date(item["發佈日期"]).toLocaleDateString() : "近期";
         const pin = item["置頂"] === true ? "📌" : "";
         return `
             <div class="notice-item">
                 <span class="notice-date">${pin}[${date}]</span>
-                <span class="notice-text">${summary}</span>
+                <span class="notice-text">${summaryHtml}</span>
             </div>
         `;
     }).join('');
@@ -219,7 +230,7 @@ function renderCompendium() {
 
     content.innerHTML = displayList.map((item, index) => {
         const q = item["標題"] || "超自然現象彙典";
-        const a = (item["貼文內容"] || item["內容"] || "暫無解答").replace(/\n/g, '<br>');
+        const a = Global.linkify(item["貼文內容"] || item["內容"] || "暫無解答").replace(/\n/g, '<br>');
         const posturl = item["連結"] || item["貼文連結"] || "";
         
         // 💡 保持正確順序的編號：如果是第 2 頁，編號從第 6 章開始（start + index + 1）
@@ -265,7 +276,7 @@ function renderServices(data) {
     container.innerHTML = data.map((item, index) => `
         <div class="card">
             <h3>${item["標題"] || '專業服務'}</h3>
-            <p>${(item["貼文內容"] || '歡迎洽詢。').replace(/\n/g, '<br>')}</p>
+            <p>${Global.linkify(item["貼文內容"] || '歡迎洽詢。').replace(/\n/g, '<br>')}</p>
         </div>
     `).join('');
 }

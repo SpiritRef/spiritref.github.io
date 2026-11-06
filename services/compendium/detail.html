@@ -72,8 +72,13 @@
             container.innerHTML = '<div class="notice-item"><p>找不到此常見問題。</p></div>';
             return;
         }
+        function linkify(text) {
+            if (text == null) return '';
+            const escaped = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return escaped.replace(/(https?:\/\/[^\\s<]+)/g, (url) => '<a href="' + url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer">' + url + '</a>');
+        }
         const q = item['標題'] || '';
-        const a = item['貼文內容'] || item['內容'] || '暫無內容';
+        const a = linkify(item['貼文內容'] || item['內容'] || '暫無內容');
         const posturl = item['連結'] || item['貼文連結'] || '';
         let urlArray = [];
         if (Array.isArray(posturl)) urlArray = posturl;

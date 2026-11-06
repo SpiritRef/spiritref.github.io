@@ -107,6 +107,22 @@ export function formatDate(raw) {
 	return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/**
+ * 將文字中的網址轉為可點擊連結（自動跳脫 HTML）
+ */
+export function linkify(text) {
+	if (text == null) return '';
+	const escaped = String(text)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+	const urlRegex = /(https?:\/\/[^\s<]+)/g;
+	return escaped.replace(urlRegex, (url) => {
+		const safe = url.replace(/"/g, '&quot;');
+		return `<a href="${safe}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+	});
+}
+
 export async function getRemoteVersion() {
     try {
         const r = await fetch(`/Data/postFB.version.json?t=${Date.now()}`, { cache: 'no-store' });

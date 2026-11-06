@@ -410,7 +410,9 @@ function updateTitleFilter() {
 // getCombinedId 已移至 /Javascript/global.js 共用
 
 function postDateVal(p) {
-	return (typeof p["發佈日期"] === 'number') ? (p["發佈日期"] - 25569) * 86400 * 1000 : new Date(p["發佈日期"]).getTime();
+	const raw = p && p["發佈日期"];
+	const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+	return isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
 function renderPosts() {
@@ -466,7 +468,11 @@ function renderPosts() {
 
 // ---------- 公告（獨立頁籤＋置頂） ----------
 function sortPinned(arr) {
-	arr.sort((a, b) => ((b['置頂'] === true) - (a['置頂'] === true)) || (new Date(b['發佈日期']) - new Date(a['發佈日期'])));
+	arr.sort((a, b) => {
+		const pin = ((b['置頂'] === true) - (a['置頂'] === true));
+		if (pin !== 0) return pin;
+		return postDateVal(b) - postDateVal(a);
+	});
 }
 
 async function loadNotices() {

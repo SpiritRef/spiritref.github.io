@@ -129,6 +129,12 @@
 
 	let JSON_PATH = ""; // 💡 儲存 INI 裡的靜態 JSON 路徑
 	let allNotices = [];
+	function isPublishedNotice(i) {
+		const raw = i && i["發佈日期"];
+		const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+		if (isNaN(d.getTime())) return true;
+		return d.getTime() <= Date.now();
+	}
 	let currentPage = 1;
 	let pageSize = 10;
 	const iniPath = '/settings/global.ini';
@@ -184,8 +190,19 @@
 			if (res.ok) {
 				const data = await res.json();
 				// 過濾與排序（置頂優先，再按日期倒序）
-				const filtered = data.filter(i => String(i["標題"] || "").includes("公告"))
-									 .sort((a, b) => ((b["置頂"] === true) - (a["置頂"] === true)) || (new Date(b["發佈日期"]) - new Date(a["發佈日期"])));
+				function noticeDateVal(x) {
+					const raw = x && x["發佈日期"];
+					const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+					return isNaN(d.getTime()) ? 0 : d.getTime();
+				}
+				const filtered = data.filter(i => String(i["標題"] || "").includes("公告") && isPublishedNotice(i))
+									 .sort((a, b) => {
+										const pin = ((b["置頂"] === true) - (a["置頂"] === true));
+										if (pin !== 0) return pin;
+										const dd = noticeDateVal(b) - noticeDateVal(a);
+										if (dd !== 0) return dd;
+										return (Number(b["PostID"]) || 0) - (Number(a["PostID"]) || 0);
+									 });
 				
 				allNotices = filtered;
 				console.log("📄 已載入靜態 JSON 公告備份");
@@ -239,11 +256,23 @@
 		document.getElementById('list-content').innerHTML = pagedData.map(i => {
 			const dateStr = i["發佈日期"] ? new Date(i["發佈日期"]).toLocaleDateString() : "近期";
 			const pin = i["置頂"] === true ? "📌" : "";
+			const artUrl = '../ghoststory/article/?id=' + encodeURIComponent(Global.getCombinedId(i));
+			const imgRaw = i["圖片網址"] || i["圖片"] || "";
+			let imgHtml = "";
+			if (typeof imgRaw === 'string' && imgRaw.trim() !== "") {
+				const first = imgRaw.split(/\\r?\\n|\\|/).map(s => s.trim()).filter(Boolean)[0];
+				if (first) imgHtml = `<img src="${first}" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:12px;vertical-align:middle;" onerror="this.style.display='none'">`;
+			}
 			return `
-				<div class="item">
-					<div class="date">${pin}[${dateStr}]</div>
-					<div class="content">${i["貼文內容"] || i["內容"]}</div>
+				<a href="${artUrl}" style="text-decoration:none;color:inherit;display:block;">
+				<div class="item" style="display:flex;align-items:flex-start;cursor:pointer;">
+					${imgHtml}
+					<div style="flex:1;min-width:0;">
+						<div class="date">${pin}[${dateStr}]</div>
+						<div class="content">${Global.linkify(i["貼文內容"] || i["內容"] || "")}</div>
+					</div>
 				</div>
+				</a>
 			`;
 		}).join('');
 
