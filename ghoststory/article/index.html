@@ -153,6 +153,12 @@
 		applySettings();
         const urlParams = new URLSearchParams(window.location.search);
         const targetId = urlParams.get('id');
+        const from = urlParams.get('from');
+        const backLink = document.querySelector('.back-home');
+        if (from === 'notices' && backLink) {
+            backLink.href = '/services/notices/';
+            backLink.innerHTML = '&#x2190;&#xFE0E; 返回公告記錄';
+        }
         if (!targetId) {
             document.getElementById('art-body').innerText = "連結無效，請返回列表重新進入。";
             return;
