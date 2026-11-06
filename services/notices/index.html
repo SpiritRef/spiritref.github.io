@@ -146,7 +146,7 @@
 		} catch (e) {}
 		// 1. cache
 		// 1. 優先讀取快取
-		const cache = localStorage.getItem('cache_notices');
+		const cache = localStorage.getItem('cache_notices_v2');
 		if (cache) {
 			try {
 				allNotices = JSON.parse(cache);
@@ -225,7 +225,7 @@
 		if (!JSON_PATH) return;
 		await fetchStaticJson();
 		try {
-			localStorage.setItem('cache_notices', JSON.stringify(allNotices));
+			localStorage.setItem('cache_notices_v2', JSON.stringify(allNotices));
 			localStorage.setItem('data_ver', remoteVer);
 			console.log("✅ 公告已更新到最新版本");
 		} catch (e) {}
@@ -260,8 +260,11 @@
 			const imgRaw = i["圖片網址"] || i["圖片"] || "";
 			let imgHtml = "";
 			if (typeof imgRaw === 'string' && imgRaw.trim() !== "") {
-				const first = imgRaw.split(/\\r?\\n|\\|/).map(s => s.trim()).filter(Boolean)[0];
-				if (first) imgHtml = `<img src="${first}" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:12px;vertical-align:middle;" onerror="this.style.display='none'">`;
+				const first = imgRaw.split(/\\r?\\n|\\|/).map(s => s.trim().replace(/\\\\/g, '/')).filter(Boolean)[0];
+				if (first) {
+					const src = /^https?:\/\//i.test(first) || first.startsWith('/') ? first : '/' + first.replace(/^\\.\\//, '');
+					imgHtml = `<img src="${src}" alt="" style="width:80px;height:80px;object-fit:cover;border-radius:6px;margin-right:12px;vertical-align:middle;" onerror="this.style.display='none'">`;
+				}
 			}
 			return `
 				<a href="${artUrl}" style="text-decoration:none;color:inherit;display:block;">
