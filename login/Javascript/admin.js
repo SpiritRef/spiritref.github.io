@@ -449,7 +449,8 @@ function renderPosts() {
 		const idx = allPosts.indexOf(p);
 		const pinned = p['置頂'] === true;
 		const artUrl = `../ghoststory/article/?id=${encodeURIComponent(getCombinedId(p))}`;
-		return `<tr><td>${pinned ? '📌' : ''}${esc(pid)}</td><td style="white-space:nowrap;">${esc(p['發佈日期'] || '')}</td>
+		const scheduled = postDateVal(p) > Date.now() ? ' ⏳預約' : '';
+		return `<tr><td>${pinned ? '📌' : ''}${esc(pid)}</td><td style="white-space:nowrap;">${esc(p['發佈日期'] || '')}${scheduled}</td>
 			<td class="title">${esc(p['標題'] || '(無標題)')}</td>
 			<td style="white-space:nowrap;">
 				<button class="rowbtn" data-act="pin" data-i="${idx}">${pinned ? '取消置頂' : '置頂'}</button>
@@ -636,7 +637,7 @@ function renderSvcRows() {
 		const cat = svcCat;
 		let lookhtml = '';
 		if (cat === '超自然現象彙典') {
-			const artUrl = `../services/Compendium/detail.html?id=${esc(it['ID'] ?? idx + 1)}`;
+			const artUrl = `../services/compendium/detail.html?id=${esc(it['ID'] ?? idx + 1)}`;
 			lookhtml = `
 				<a class="rowbtn" style="text-decoration:none;" href="${artUrl}" target="_blank">👁查看</a>
 				<button class="rowbtn" data-sact="copy" data-url="${artUrl}">複製網址</button>

@@ -5,7 +5,7 @@ export function buildSitemapXml(posts, services) {
 	const entries = [];
 	const staticPages = [
 		{ loc: `${base}/services/`, changefreq: 'weekly', priority: '1.0' },
-		{ loc: `${base}/services/Compendium/`, changefreq: 'weekly', priority: '0.8' },
+		{ loc: `${base}/services/compendium/`, changefreq: 'weekly', priority: '0.8' },
 		{ loc: `${base}/services/notices/`, changefreq: 'daily', priority: '0.8' },
 		{ loc: `${base}/services/consult.html`, changefreq: 'monthly', priority: '0.5' },
 		{ loc: `${base}/ghoststory/`, changefreq: 'daily', priority: '0.9' },
@@ -41,7 +41,7 @@ export function buildSitemapXml(posts, services) {
 			const title = svc && svc['標題'] != null ? String(svc['標題']) : ((function(){const ks=Object.keys(svc);return ks.length>1 ? (svc[ks[1]] || '') : '';}()) || '');
 			if (!title) continue;
 			const compendiumId = (svc && svc['ID'] != null) ? svc['ID'] : title;
-			entries.push({ loc: `${base}/services/Compendium/detail.html?id=${encodeURIComponent(compendiumId)}`, lastmod: today, changefreq: 'monthly', priority: '0.7' });
+			entries.push({ loc: `${base}/services/compendium/detail.html?id=${encodeURIComponent(compendiumId)}`, lastmod: today, changefreq: 'monthly', priority: '0.7' });
 		}
 	}
 	let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';

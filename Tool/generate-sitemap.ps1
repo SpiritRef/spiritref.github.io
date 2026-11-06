@@ -23,7 +23,7 @@ $entries = @()
 # Static public pages
 $static = @(
     @{ loc="$base/services/"; lastmod=$today; changefreq="weekly"; priority="1.0" },
-    @{ loc="$base/services/Compendium/"; lastmod=$today; changefreq="weekly"; priority="0.8" },
+    @{ loc="$base/services/compendium/"; lastmod=$today; changefreq="weekly"; priority="0.8" },
     @{ loc="$base/services/notices/"; lastmod=$today; changefreq="daily"; priority="0.8" },
     @{ loc="$base/services/consult.html"; lastmod=$today; changefreq="monthly"; priority="0.5" },
     @{ loc="$base/ghoststory/"; lastmod=$today; changefreq="daily"; priority="0.9" },
@@ -83,7 +83,7 @@ if (Test-Path $svcPath) {
         $compendiumId = if ($id) { $id } else { $title }
         if (-not $compendiumId) { continue }
         $encoded = [System.Uri]::EscapeDataString($compendiumId)
-        $url = "$base/services/Compendium/detail.html?id=$encoded"
+        $url = "$base/services/compendium/detail.html?id=$encoded"
         $entry = @{ loc=$url; lastmod=$today; changefreq="monthly"; priority="0.7" }
         $entries += $entry
     }

@@ -6,6 +6,17 @@ const iniPath = '/settings/global.ini';
 
 let allNotices = [];
 let allServices = [];
+
+function parseServiceDate(raw) {
+    if (typeof raw === 'number') return new Date((raw - 25569) * 86400 * 1000);
+    if (raw) return new Date(raw);
+    return new Date(0);
+}
+function isServicePublished(item) {
+    const d = parseServiceDate(item && item["發佈日期"]);
+    if (isNaN(d.getTime())) return true;
+    return d.getTime() <= Date.now();
+}
 let allVisualRecords = [];
 let allCompendiums = [];
 
@@ -98,7 +109,7 @@ async function loadStaticData(path, type) {
         
         if (type === 'notice') {
             const rawData = Array.isArray(data) ? data : (data.notices || []);
-            allNotices = rawData.filter(item => String(item["標題"] || "").includes("公告"));
+            allNotices = rawData.filter(item => String(item["標題"] || "").includes("公告") && isServicePublished(item));
             try { localStorage.setItem('cache_notices', JSON.stringify(allNotices)); } catch (e) {}
             renderNotices();
         } else if (type === 'service'){

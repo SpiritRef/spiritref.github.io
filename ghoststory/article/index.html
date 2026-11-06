@@ -191,8 +191,20 @@
         }
     }
 
+    function isPublishedPost(p) {
+        const raw = p && p["發佈日期"];
+        const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(raw);
+        if (isNaN(d.getTime())) return true;
+        return d.getTime() <= Date.now();
+    }
     function renderPost(data, id) {
         const post = data.find(p => getCombinedId(p) === id);
+        if (post && !isPublishedPost(post)) {
+            document.title = "尚未發佈 | 鬼磕頭日誌";
+            document.getElementById('art-title').innerText = "此內容尚未發佈";
+            document.getElementById('art-body').innerText = "此文章將於預定時間公開，請稍後再來。";
+            return;
+        }
         if (post) {
             if (document.getElementById('art-title').innerText === post["標題"]) {
                 document.getElementById('art-body').innerText = post["貼文內容"];
