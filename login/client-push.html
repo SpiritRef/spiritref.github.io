@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-d6tfacI06ho0hvzpEPPdBf3o3SJpFAUU3bZSiSd7JZo='; connect-src 'self' https://script.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-d6tfacI06ho0hvzpEPPdBf3o3SJpFAUU3bZSiSd7JZo='; connect-src 'self' https://script.google.com https://*.googleusercontent.com https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self';">
 <title>客戶推播 | 鬼磕頭</title>
 <link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
 <style>
@@ -30,7 +30,7 @@
 </head>
 <body>
 <div class="card">
-  <a class="back" href="/">&larr; 返回首頁</a>
+  <a class="back" href="./admin.html">&larr; 返回後台</a>
   <h2>📣 客戶推播</h2>
 
   <div id="tokenMode">
@@ -81,7 +81,22 @@ try {
   };
 }
 
+import('/login/Javascript/adminAuth.js').then(async ({ requireAdmin }) => {
+  const session = await requireAdmin('./');
+  if (!session) return;
+  // prefill password from sessionStorage if exists
+  const saved = sessionStorage.getItem('admin_pwd');
+  if (saved) {
+    const el = document.getElementById('adminPwd');
+    if (el) el.value = saved;
+  }
+  init();
+}).catch((e) => {
+  console.error('Auth load failed:', e);
+});
+
 let GAS_URL = '';
+let AUTH_URL = '';
 let ready = false;
 let token = '';
 let manual = false;
@@ -93,6 +108,8 @@ async function initConfig() {
     const raw = (cfg && cfg.CONSULT_API_URL ? cfg.CONSULT_API_URL : '').trim();
     GAS_URL = raw.startsWith('http') ? raw : (raw ? atob(raw) : '');
     if (!GAS_URL) throw new Error('INI 尚未設定 CONSULT_API_URL');
+    const rawAuth = (cfg && cfg.updateGithub_URL ? cfg.updateGithub_URL : '').trim();
+    AUTH_URL = rawAuth.startsWith('http') ? rawAuth : (rawAuth ? atob(rawAuth) : '');
     ready = true;
   } catch (e) {
     say('設定載入失敗：' + e.message, 'red');
@@ -165,14 +182,30 @@ $('sendBtn').addEventListener('click', async () => {
   say('發送中...', 'blue');
   $('sendBtn').disabled = true;
   try {
+    let githubToken = '';
+    if (AUTH_URL) {
+      const authRes = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'getGithubToken', user: password, ip: '', ua: navigator.userAgent || '' })
+      });
+      const authJ = await authRes.json();
+      if (!authJ.success) {
+        say('❌ 密碼錯誤', 'red');
+        $('sendBtn').disabled = false;
+        return;
+      }
+      githubToken = authJ.githubToken || '';
+    }
+
     let payload;
     if (manual) {
       const uid = $('manualUid').value.trim();
       const name = $('manualName').value.trim();
       if (!uid) { say('請輸入客戶 LINE 使用者 ID', 'red'); $('sendBtn').disabled = false; return; }
-      payload = { action: 'push_message_manual', uid, name, password, message };
+      payload = { action: 'push_message_manual', uid, name, githubToken, message };
     } else {
-      payload = { action: 'push_message', token, password, message };
+      payload = { action: 'push_message', token, githubToken, message };
     }
     const res = await fetch(GAS_URL, {
       method: 'POST',
@@ -201,7 +234,6 @@ $('sendBtn').addEventListener('click', async () => {
   }
 });
 
-// 即時驗證 uid
 const uidInput = $('manualUid');
 if (uidInput) {
   uidInput.addEventListener('input', () => {
@@ -212,7 +244,11 @@ if (uidInput) {
   });
 }
 
-initConfig().then(resolveTarget);
+function init() {
+  initConfig().then(resolveTarget);
+}
+
+init();
 </script>
 </body>
 </html>
