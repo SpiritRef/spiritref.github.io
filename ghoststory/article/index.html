@@ -188,7 +188,11 @@
                         const staticData = await staticRes.json();
                         console.log("使用 JSON 同步");
                         try { localStorage.setItem('cached_novel_data', JSON.stringify(staticData)); } catch (e) {}
-                        renderPost(staticData, targetId);
+                        const found = renderPost(staticData, targetId);
+                        if (found === false) {
+                            location.replace('/ghoststory/');
+                            return;
+                        }
                     }
                 } catch(e) { console.warn("JSON 載入失敗"); }
             }
@@ -205,16 +209,19 @@
     }
     function renderPost(data, id) {
         const post = data.find(p => getCombinedId(p) === id);
-        if (post && !isPublishedPost(post)) {
+        if (!post) {
+            return false;
+        }
+        if (!isPublishedPost(post)) {
             document.title = "尚未發佈 | 鬼磕頭日誌";
             document.getElementById('art-title').innerText = "此內容尚未發佈";
             document.getElementById('art-body').innerText = "此文章將於預定時間公開，請稍後再來。";
-            return;
+            return true;
         }
         if (post) {
             if (document.getElementById('art-title').innerText === post["標題"]) {
                 document.getElementById('art-body').innerHTML = linkify(post["貼文內容"]);
-                return;
+                return true;
             }
 
             document.title = `${post["標題"]} | 鬼磕頭日誌`;
@@ -237,6 +244,7 @@
                 });
             }
         }
+        return true;
     }
 
     function renderMenu(menuData) {

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://script.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self';">
+<title>客戶推播 | 鬼磕頭</title>
+<link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
+<style>
+  body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f8f9fa; padding: 20px; margin: 0; display: flex; justify-content: center; }
+  .card { background: linear-gradient(135deg, #f7ebd7 0%, #e6d3af 100%); border: 1px solid #dcbfa2; border-left: 5px solid #8b7355; border-radius: 12px; padding: 25px; width: 100%; max-width: 520px; color: #3e2723; }
+  h2 { color: #4a2e1b; margin-top: 0; }
+  label { display: block; font-weight: bold; color: #4a2e1b; margin: 12px 0 4px; }
+  textarea, input { width: 100%; padding: 10px; border: 1px solid #dcbfa2; border-radius: 6px; box-sizing: border-box; font-family: inherit; background: #fff; }
+  textarea { min-height: 140px; resize: vertical; }
+  button { width: 100%; padding: 12px; background: #8b7355; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 16px; font-family: inherit; }
+  button:disabled { opacity: .6; }
+  .row { display: flex; gap: 8px; }
+  .row button { margin-top: 8px; }
+  #preview { display: none; white-space: pre-wrap; min-height: 140px; padding: 10px; border: 1px solid #dcbfa2; border-radius: 6px; background: #fffdf8; color: #3e2723; }
+  #status { margin-top: 12px; font-weight: bold; font-size: 14px; white-space: pre-line; text-align: center; }
+  .target { font-size: 15px; color: #4a2e1b; margin: 8px 0 4px; }
+  .target b { color: #8b7355; }
+  .back { display: inline-block; margin-bottom: 8px; color: #8b7355; text-decoration: none; font-size: 14px; }
+  .manual { border: 1px dashed #8b7355; border-radius: 8px; padding: 12px; margin-top: 8px; }
+  .hint { font-size: 12px; color: #8b7355; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <a class="back" href="/">&larr; 返回首頁</a>
+  <h2>📣 客戶推播</h2>
+
+  <div id="tokenMode">
+    <div class="target">準備發送推播給：<b id="targetName">載入中...</b></div>
+  </div>
+
+  <div id="manualMode" class="manual">
+    <div class="hint">未帶入連結參數，可手動輸入客戶 LINE 使用者 ID。</div>
+    <label>客戶 LINE 使用者 ID (uid)</label>
+    <input type="text" id="manualUid" placeholder="U 開頭 32 字元">
+    <label>客戶名稱（選填）</label>
+    <input type="text" id="manualName" placeholder="用於稽核顯示">
+  </div>
+
+  <label>訊息內容</label>
+  <textarea id="msgInput" placeholder="請輸入要發送給客戶的訊息"></textarea>
+  <div id="preview"></div>
+  <div class="row">
+    <button id="previewBtn" type="button" style="background:#6d6d6d;">預覽</button>
+  </div>
+  <label>管理密碼</label>
+  <input type="password" id="adminPwd" placeholder="請輸入管理密碼" autocomplete="off">
+  <button id="sendBtn">確認發送</button>
+  <div id="status"></div>
+</div>
+<script type="module">
+let getIni;
+try {
+  ({ getIni } = await import('/Javascript/global.js'));
+} catch (e) {
+  getIni = async (filePath) => {
+    try {
+      const response = await fetch(filePath + '?t=' + Date.now());
+      if (!response.ok) throw new Error('找不到檔案: ' + filePath);
+      const text = await response.text();
+      const config = {};
+      text.split(/\r?\n/).forEach(line => {
+        line = line.trim();
+        if (!line || line.startsWith(';') || line.startsWith('#')) return;
+        const index = line.indexOf('=');
+        if (index !== -1) config[line.substring(0, index).trim()] = line.substring(index + 1).trim();
+      });
+      return config;
+    } catch (err) {
+      console.error('INI Error:', err);
+      return null;
+    }
+  };
+}
+
+let GAS_URL = '';
+let ready = false;
+let token = '';
+let manual = false;
+const $ = (id) => document.getElementById(id);
+
+async function initConfig() {
+  try {
+    const cfg = await getIni('/settings/global.ini');
+    const raw = (cfg && cfg.CONSULT_API_URL ? cfg.CONSULT_API_URL : '').trim();
+    GAS_URL = raw.startsWith('http') ? raw : (raw ? atob(raw) : '');
+    if (!GAS_URL) throw new Error('INI 尚未設定 CONSULT_API_URL');
+    ready = true;
+  } catch (e) {
+    say('設定載入失敗：' + e.message, 'red');
+  }
+}
+
+function say(m, c) {
+  const s = $('status');
+  s.innerText = m; s.style.color = c || '#4a2e1b';
+}
+
+const params = new URLSearchParams(window.location.search);
+token = params.get('t') || '';
+
+async function resolveTarget() {
+  if (!token) {
+    manual = true;
+    $('tokenMode').style.display = 'none';
+    $('manualMode').style.display = 'block';
+    if ($('targetName')) $('targetName').textContent = '—';
+    say('未帶入連結參數，已切換為手動輸入模式', 'orange');
+    return;
+  }
+  $('manualMode').style.display = 'none';
+  if (!ready) return;
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'resolve_push_token', token })
+    });
+    const j = await res.json();
+    if (j.success) {
+      $('targetName').textContent = j.name;
+    } else {
+      $('targetName').textContent = '—';
+      say(j.message || '連結已失效', 'red');
+      $('sendBtn').disabled = true;
+    }
+  } catch (e) {
+    say('連線失敗：' + e.message, 'red');
+    $('sendBtn').disabled = true;
+  }
+}
+
+let previewing = false;
+$('previewBtn').addEventListener('click', () => {
+  const ta = $('msgInput');
+  const pv = $('preview');
+  if (!previewing) {
+    pv.textContent = ta.value;
+    pv.style.display = 'block';
+    ta.style.display = 'none';
+    $('previewBtn').textContent = '編輯';
+    previewing = true;
+  } else {
+    pv.style.display = 'none';
+    ta.style.display = 'block';
+    $('previewBtn').textContent = '預覽';
+    previewing = false;
+  }
+});
+
+$('sendBtn').addEventListener('click', async () => {
+  if (!ready) return say('設定載入中，請稍候', 'orange');
+  const message = $('msgInput').value.trim();
+  const password = $('adminPwd').value;
+  if (!message) return say('請輸入訊息內容', 'red');
+  if (!password) return say('請輸入管理密碼', 'red');
+  say('發送中...', 'blue');
+  $('sendBtn').disabled = true;
+  try {
+    let payload;
+    if (manual) {
+      const uid = $('manualUid').value.trim();
+      const name = $('manualName').value.trim();
+      if (!uid) { say('請輸入客戶 LINE 使用者 ID', 'red'); $('sendBtn').disabled = false; return; }
+      payload = { action: 'push_message_manual', uid, name, password, message };
+    } else {
+      payload = { action: 'push_message', token, password, message };
+    }
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    const j = await res.json();
+    if (j.success) {
+      say('✅ 發送成功', 'green');
+      $('msgInput').value = '';
+      $('adminPwd').value = '';
+      if (manual) { $('manualUid').value = ''; $('manualName').value = ''; }
+      const pv = $('preview');
+      pv.style.display = 'none';
+      pv.textContent = '';
+      $('msgInput').style.display = 'block';
+      previewing = false;
+      $('previewBtn').textContent = '預覽';
+    } else {
+      say('❌ ' + (j.message || '發送失敗'), 'red');
+    }
+  } catch (e) {
+    say('連線失敗：' + e.message, 'red');
+  } finally {
+    $('sendBtn').disabled = false;
+  }
+});
+
+// 即時驗證 uid
+const uidInput = $('manualUid');
+if (uidInput) {
+  uidInput.addEventListener('input', () => {
+    const v = uidInput.value.trim();
+    const ok = /^U[0-9a-fA-F]{32}$/.test(v) || v === '';
+    uidInput.style.borderColor = ok ? '#dcbfa2' : '#b04a3a';
+    uidInput.style.background = ok ? '#fff' : '#fdecea';
+  });
+}
+
+initConfig().then(resolveTarget);
+</script>
+</body>
+</html>
