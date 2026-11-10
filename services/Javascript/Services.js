@@ -215,26 +215,27 @@ function renderCompendium() {
         return;
     }
 
-    const pageSize = 5; // 每頁/每次推播 5 篇
+    const pageSize = 5; // 每次推播 5 篇
     const totalCount = allCompendiums.length;
-    const maxPage = Math.ceil(totalCount / pageSize) || 1;
 
-    // 💡 核心輪播邏輯：根據今天是幾號 (1~31) 計算要顯示第幾頁
-    const todayDate = new Date().getDate(); 
-    // 取餘數循環：如果文章總頁數只有 3 頁，而今天是 4 號，就會循環回到第 1 頁 (4-1)%3 + 1 = 1
-    const targetPage = ((todayDate - 1) % maxPage) + 1;
-
-    const start = (targetPage - 1) * pageSize;
-    const end = start + pageSize;
-    const displayList = allCompendiums.slice(start, end);
+    // 💡 循環邏輯：每天向前移動 (totalCount - 5) 篇，循環取 5 篇
+    const todayDate = new Date().getDate();
+    const step = totalCount > 5 ? totalCount - 5 : 1;
+    let startIdx = (totalCount - step * (todayDate - 1)) % totalCount;
+    if (startIdx < 0) startIdx += totalCount;
+    const displayList = [];
+    for (let i = 0; i < pageSize && i < totalCount; i++) {
+        displayList.push(allCompendiums[(startIdx + i) % totalCount]);
+    }
+    const start = startIdx;
 
     content.innerHTML = displayList.map((item, index) => {
         const q = item["標題"] || "超自然現象彙典";
         const a = Global.linkify(item["貼文內容"] || item["內容"] || "暫無解答").replace(/\n/g, '<br>');
         const posturl = item["連結"] || item["貼文連結"] || "";
         
-        // 💡 保持正確順序的編號：如果是第 2 頁，編號從第 6 章開始（start + index + 1）
-        const qNumber = start + index + 1;
+        // 循環顯示時，編號顯示該筆在原始列表中的實際位置
+        const qNumber = allCompendiums.indexOf(item) + 1;
         
         // 處理多個連結：支援陣列，或是以逗號、換行、空格分隔的字串
         let urlArray = [];
