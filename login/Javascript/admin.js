@@ -588,10 +588,20 @@ function openSvcCreator() {
 		+ fieldDefs('svc')
 			.filter(([k]) => !(cat === '專業服務' && k === '連結'))
 			.map(([k, t]) => {
-				const input = t === 'textarea'
-					? `<textarea data-k="${k}"></textarea>`
-					: `<input data-k="${k}" value="">`;
-				const hint = (k === '連結') ? `<div style="font-size:12px;color:#8b7355;margin:2px 0 6px;">多個連結請換行或逗號分隔，一行一個也可以</div>` : '';
+				let input = '';
+				if (t === 'textarea') {
+					input = `<textarea data-k="${k}"></textarea>`;
+				} else if (k === '發佈日期') {
+					input = `<input type="datetime-local" data-k="${k}" value="">`;
+				} else {
+					input = `<input data-k="${k}" value="">`;
+				}
+				let hint = '';
+				if (k === '連結') {
+					hint = `<div style="font-size:12px;color:#8b7355;margin:2px 0 6px;">多個連結請換行或逗號分隔，一行一個也可以</div>`;
+				} else if (k === '發佈日期') {
+					hint = `<div style="font-size:12px;color:#8b7355;margin-top:4px;">* 選擇未來時間，將延後發佈。</div>`;
+				}
 				return `<label>${k}</label>` + input + hint;
 			}).join('');
 	$('previewBox').style.display = 'none';
@@ -601,7 +611,7 @@ function openSvcCreator() {
 	if (dateInput && !dateInput.value) {
 		const now = new Date();
 		const pad = (n) => String(n).padStart(2, '0');
-		dateInput.value = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+		dateInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 	}
 }
 	
@@ -689,10 +699,27 @@ function openEditor(kind, idx) {
 		.filter(([k]) => !(hideLink && k === '連結'))
 		.map(([k, t]) => {
 			const v = src[k] ?? src['內容'] ?? '';
-			const input = t === 'textarea'
-				? `<textarea data-k="${k}">${esc(v)}</textarea>`
-				: `<input data-k="${k}" value="${esc(String(v)).replace(/"/g, '&quot;')}">`;
-			const hint = (k === '連結') ? `<div style="font-size:12px;color:#8b7355;margin:2px 0 6px;">多個連結請換行或逗號分隔，一行一個也可以</div>` : '';
+			let input = '';
+			let hint = '';
+			if (t === 'textarea') {
+				input = `<textarea data-k="${k}">${esc(v)}</textarea>`;
+			} else if (k === '發佈日期') {
+				let dateVal = String(v || '');
+				if (dateVal && dateVal.includes('/')) {
+					// YYYY/MM/DD HH:MM:SS -> YYYY-MM-DDTHH:MM
+					const m = dateVal.match(/^(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
+					if (m) {
+						dateVal = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}`;
+					}
+				}
+				input = `<input type="datetime-local" data-k="${k}" value="${esc(dateVal)}">`;
+				hint = `<div style="font-size:12px;color:#8b7355;margin-top:4px;">* 選擇未來時間，將延後發佈。</div>`;
+			} else {
+				input = `<input data-k="${k}" value="${esc(String(v)).replace(/"/g, '&quot;')}">`;
+			}
+			if (k === '連結') {
+				hint = `<div style="font-size:12px;color:#8b7355;margin:2px 0 6px;">多個連結請換行或逗號分隔，一行一個也可以</div>`;
+			}
 			return `<label>${k}</label>` + input + hint;
 		}).join('');
 	$('previewBox').style.display = 'none';
