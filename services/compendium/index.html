@@ -145,6 +145,13 @@
 	import * as Global from '/Javascript/global.js?v=20261104';
 
     let allCompendiums = [];
+    function isPublishedCompendium(item) {
+        const raw = item && item["發佈日期"];
+        if (raw == null || raw === '') return true;
+        const d = (typeof raw === 'number') ? new Date((raw - 25569) * 86400 * 1000) : new Date(String(raw).replace(/\//g, '-').replace(' ', 'T'));
+        if (isNaN(d.getTime())) return true;
+        return d.getTime() <= Date.now();
+    }
     let currentPage = 1;
     let pageSize = 10;
     let jsonServicePath = "";
@@ -216,7 +223,7 @@
         if (!data || !Array.isArray(data)) return;
 
         // 【核心篩選】只抓取「分類」為「常見問題」的資料，並按日期排序
-        allCompendiums = data.filter(item => String(item['分類'] || '').indexOf('彙') !== -1).sort((a, b) => String(a['ID'] || '').localeCompare(String(b['ID'] || '')));
+        allCompendiums = data.filter(item => String(item['分類'] || '').indexOf('彙') !== -1 && isPublishedCompendium(item)).sort((a, b) => String(a['ID'] || '').localeCompare(String(b['ID'] || '')));
 
         updateUI();
     }
@@ -275,7 +282,10 @@
 	        
 	        // 將連結陣列轉換為 HTML `<a>` 標籤，並以 <br> 換行
 	        const linksHtml = urlArray.length > 0 
-				? `<div class="compendium-links"><span>相關文章：</span>${urlArray.map((url, i) => `<a href="${url}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`).join('')}</div>` 
+				? `<div class="compendium-links"><span>相關文章：</span>${urlArray.map((url, i) => {
+					const href = /ghoststory\/article\//.test(url) ? url + (url.includes('?') ? '&' : '?') + 'from=compendium' : url;
+					return `<a href="${href}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`;
+				}).join('')}</div>` 
 				: "";
 	
 	        return `

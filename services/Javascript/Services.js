@@ -85,7 +85,7 @@ function processServiceData(data) {
 
     // 💡 任務 2：處理 Compendium (分類：超自然現象彙典)
     Promise.resolve().then(() => {
-        allCompendiums = data.filter(item => String(item["分類"] || "") === "超自然現象彙典");
+        allCompendiums = data.filter(item => String(item["分類"] || "") === "超自然現象彙典" && isServicePublished(item));
         renderCompendium();
         console.log("❓ Compendium 已渲染");
     });

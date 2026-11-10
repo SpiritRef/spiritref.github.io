@@ -69,7 +69,15 @@
             return String(fid) === String(id || '') || String(title) === String(id || '');
         });
         if (!item) {
-            container.innerHTML = '<div class="notice-item"><p>找不到此常見問題。</p></div>';
+            container.innerHTML = '<div class="notice-item"><p>找不到此常見問題，將返回彙典列表。</p></div>';
+            setTimeout(() => { window.location.href = './'; }, 1500);
+            return;
+        }
+        const rawDate = item['發佈日期'];
+        const itemDate = (typeof rawDate === 'number') ? new Date((rawDate - 25569) * 86400 * 1000) : new Date(String(rawDate || '').replace(/\\//g, '-').replace(' ', 'T'));
+        if (rawDate && !isNaN(itemDate.getTime()) && itemDate.getTime() > Date.now()) {
+            document.title = '尚未發佈 | 超自然現象彙典';
+            container.innerHTML = '<div class="notice-item"><p>此內容尚未發佈，請於預定時間後再查看。</p></div>';
             return;
         }
         function linkify(text) {
@@ -84,7 +92,11 @@
         if (Array.isArray(posturl)) urlArray = posturl;
         else if (typeof posturl === 'string' && posturl.trim() !== '') urlArray = posturl.split(/[ ,\n]+/).filter(u => u.trim() !== '');
         const linksHtml = urlArray.length > 0
-            ? '<div class="compendium-links"><span>相關文章：</span>' + urlArray.map(u => '<a href="' + u.trim() + '" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>').join('') + '</div>'
+            ? '<div class="compendium-links"><span>相關文章：</span>' + urlArray.map(u => {
+                const url = u.trim();
+                const href = /ghoststory\/article\//.test(url) ? url + (url.includes('?') ? '&' : '?') + 'from=compendium' : url;
+                return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>';
+            }).join('') + '</div>'
             : '';
         document.title = q + ' | 超自然現象彙典';
         container.innerHTML = '<h1 class="detail-title" style="margin-top:12px;">' + q + '</h1>'

@@ -597,8 +597,14 @@ function openSvcCreator() {
 	$('previewBox').style.display = 'none';
 	$('modal').classList.add('open');
 	setModalMode(false);
+	const dateInput = document.querySelector('#modalFields input[data-k="發佈日期"]');
+	if (dateInput && !dateInput.value) {
+		const now = new Date();
+		const pad = (n) => String(n).padStart(2, '0');
+		dateInput.value = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+	}
 }
-
+	
 // ---------- 服務內容 ----------
 async function loadSvc() {
 	$('svcRows').innerHTML = '<tr><td colspan="3">載入中...</td></tr>';
@@ -650,8 +656,11 @@ function renderSvcRows() {
 				<button class="rowbtn" data-sact="copy" data-url="${artUrl}">複製網址</button>
 			`;
 		}
+		const svcDateRaw = it['發佈日期'];
+		const svcDate = (typeof svcDateRaw === 'number') ? new Date((svcDateRaw - 25569) * 86400 * 1000) : new Date(String(svcDateRaw || '').replace(/\\//g, '-').replace(' ', 'T'));
+		const svcScheduled = (!isNaN(svcDate.getTime()) && svcDate.getTime() > Date.now()) ? ' ⏳預約' : '';
 		return '<tr><td>' + esc(it['ID'] ?? idx + 1) + '</td>'
-		+ '<td class="title">' + esc(it['標題'] || '') + '</td>'
+		+ '<td class="title">' + esc(it['標題'] || '') + svcScheduled + '</td>'
 		+ '<td style="white-space:nowrap;">'
 		+ '<button class="rowbtn" data-sact="up" data-i="' + idx + '">↑</button>'
 		+ '<button class="rowbtn" data-sact="down" data-i="' + idx + '">↓</button>'
@@ -668,7 +677,7 @@ function fieldDefs(kind) {
 	if (kind === 'post') return [
 		['標題', 'text'], ['發佈日期', 'text'], ['貼文內容', 'textarea'], ['圖片網址', 'text']
 	];
-	return [['標題', 'text'], ['貼文內容', 'textarea'], ['連結', 'text']];
+	return [['標題', 'text'], ['發佈日期', 'text'], ['貼文內容', 'textarea'], ['連結', 'text']];
 }
 
 function openEditor(kind, idx) {

@@ -12,7 +12,7 @@ export function buildSitemapXml(posts, services) {
 		{ loc: `${base}/`, changefreq: 'weekly', priority: '0.8' }
 	];
 	for (const s of staticPages) entries.push({ ...s, lastmod: today });
-	// 文章頁
+	// 文章頁（僅已發佈）
 	if (Array.isArray(posts)) {
 		for (const post of posts) {
 			const pid = post && post['PostID'] != null ? String(post['PostID']) : '0';

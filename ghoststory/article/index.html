@@ -158,6 +158,9 @@
         if (from === 'notices' && backLink) {
             backLink.href = '/services/notices/';
             backLink.innerHTML = '&#x2190;&#xFE0E; 返回公告記錄';
+        } else if (from === 'compendium' && backLink) {
+            backLink.href = '/services/compendium/';
+            backLink.innerHTML = '&#x2190;&#xFE0E; 超自然現象彙典';
         }
         if (!targetId) {
             document.getElementById('art-body').innerText = "連結無效，請返回列表重新進入。";
