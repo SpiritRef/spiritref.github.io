@@ -78,7 +78,7 @@ function loadCache() {
 function processServiceData(data) {
     // 💡 任務 1：處理專業服務 (包含：專業服務)
     Promise.resolve().then(() => {
-        allServices = data.filter(item => String(item["分類"] || "") === "專業服務");
+        allServices = data.filter(item => String(item["分類"] || "") === "專業服務" && isServicePublished(item));
         renderServices(allServices);
         console.log("🛠️ 專業服務已渲染");
     });
@@ -92,7 +92,7 @@ function processServiceData(data) {
     
     // 💡 任務 3：處理視覺紀錄 (分類：視覺紀錄)
     Promise.resolve().then(() => {
-        allVisualRecords = data.filter(item => String(item["分類"] || "") === "視覺紀錄");
+        allVisualRecords = data.filter(item => String(item["分類"] || "") === "視覺紀錄" && isServicePublished(item));
         renderVisualRecords(allVisualRecords.slice(0, 6), allVisualRecords.length); // 首頁顯示 6 個，多的去 YouTube 頻道看
     });
 }
