@@ -285,7 +285,7 @@
 				? (() => {
 					const isImages = urlArray.every(u => /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(u) || u.startsWith('pic/') || u.startsWith('ghoststory/pic/'));
 					if (isImages) {
-						return `<div class="compendium-links"><span>相關圖片：</span>${urlArray.map(u => {
+						return `<div class="compendium-links">${urlArray.map(u => {
 							let src = u;
 							if (src.startsWith('pic/')) src = '/ghoststory/' + src;
 							else if (src.startsWith('ghoststory/pic/')) src = '/' + src;
