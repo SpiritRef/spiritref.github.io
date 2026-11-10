@@ -280,12 +280,23 @@
 	            urlArray = posturl.split(/[,\n\s]+/).filter(url => url.trim() !== "");
 	        }
 	        
-	        // 將連結陣列轉換為 HTML `<a>` 標籤，並以 <br> 換行
+	        // 將連結陣列轉換為 HTML：圖片顯示圖片，否則顯示文章連結（智慧偵測）
 	        const linksHtml = urlArray.length > 0 
-				? `<div class="compendium-links"><span>相關文章：</span>${urlArray.map((url, i) => {
-					const href = /ghoststory\/article\//.test(url) ? url + (url.includes('?') ? '&' : '?') + 'from=compendium' : url;
-					return `<a href="${href}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`;
-				}).join('')}</div>` 
+				? (() => {
+					const isImages = urlArray.every(u => /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(u) || u.startsWith('pic/') || u.startsWith('ghoststory/pic/'));
+					if (isImages) {
+						return `<div class="compendium-links"><span>相關圖片：</span>${urlArray.map(u => {
+							let src = u;
+							if (src.startsWith('pic/')) src = '/ghoststory/' + src;
+							else if (src.startsWith('ghoststory/pic/')) src = '/' + src;
+							return `<img src="${src}" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'">`;
+						}).join('')}</div>`;
+					}
+					return `<div class="compendium-links"><span>相關文章：</span>${urlArray.map((url, i) => {
+						const href = /ghoststory\/article\//.test(url) ? url + (url.includes('?') ? '&' : '?') + 'from=compendium' : url;
+						return `<a href="${href}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`;
+					}).join('')}</div>`;
+				})()
 				: "";
 	
 	        return `

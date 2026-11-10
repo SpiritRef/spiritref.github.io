@@ -598,6 +598,8 @@ function openSvcCreator() {
 				}
 				let hint = '';
 				if (k === '連結') {
+					input = `<input data-k="${k}" value="" placeholder="文章網址或圖片路徑（例如 ghoststory/pic/xxx.jpg）">
+<button type="button" class="rowbtn" style="margin-top:6px;" onclick="uploadSvcImage(this)">📤 上傳圖片</button>`;
 					hint = `<div style="font-size:12px;color:#8b7355;margin:2px 0 6px;">多個連結請換行或逗號分隔，一行一個也可以</div>`;
 				} else if (k === '發佈日期') {
 					hint = `<div style="font-size:12px;color:#8b7355;margin-top:4px;">* 選擇未來時間，將延後發佈。</div>`;
@@ -714,11 +716,13 @@ function openEditor(kind, idx) {
 				}
 				input = `<input type="datetime-local" data-k="${k}" value="${esc(dateVal)}">`;
 				hint = `<div style="font-size:12px;color:#8b7355;margin-top:4px;">* 選擇未來時間，將延後發佈。</div>`;
+			} else if (k === '連結') {
+				const v = src[k] ?? '';
+				input = `<input data-k="${k}" value="${esc(String(v)).replace(/"/g, '&quot;')}" placeholder="文章網址或圖片路徑（例如 ghoststory/pic/xxx.jpg）">
+<button type="button" class="rowbtn" style="margin-top:6px;" onclick="uploadSvcImage(this)">📤 上傳圖片</button>`;
+				hint = `<div style="font-size:12px;color:#8b7355;margin:2px 0 6px;">多個連結請換行或逗號分隔，一行一個也可以</div>`;
 			} else {
 				input = `<input data-k="${k}" value="${esc(String(v)).replace(/"/g, '&quot;')}">`;
-			}
-			if (k === '連結') {
-				hint = `<div style="font-size:12px;color:#8b7355;margin:2px 0 6px;">多個連結請換行或逗號分隔，一行一個也可以</div>`;
 			}
 			return `<label>${k}</label>` + input + hint;
 		}).join('');
@@ -1131,3 +1135,54 @@ export async function initAdmin(sess) {
 	loadNotices();
 	loadSvc();
 }
+
+// ---------- 圖片上傳（彙典/服務編輯用） ----------
+// 用法：在輸入欄標籤下方放一個按鈕 onclick="uploadSvcImage(this)"
+window.uploadSvcImage = function(btn) {
+	const fileInput = document.createElement('input');
+	fileInput.type = 'file';
+	fileInput.accept = 'image/*';
+	fileInput.onchange = async function() {
+		const file = fileInput.files[0];
+		if (!file) return;
+		const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+		const now = new Date();
+		const pad = n => String(n).padStart(2, '0');
+		const dateBase = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+		const fileName = `${dateBase}.${ext}`;
+		const filePath = `${GHOST_REPO}/pic/${fileName}`; // ghoststory/pic/xxx.jpg
+		btn.innerText = '上傳中...';
+		btn.disabled = true;
+		try {
+			const pat = await ensurePat();
+			const base64 = await new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.readAsDataURL(file);
+				reader.onload = () => {
+					const raw = reader.result.split(',')[1];
+					resolve(raw.replace(/\s/g, ''));
+				};
+				reader.onerror = (e) => reject(e);
+			});
+			const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${filePath}`;
+			const res = await fetch(apiUrl, {
+				method: 'PUT',
+				headers: ghHeaders(pat),
+				body: JSON.stringify({ message: `Upload ${fileName} (svc)`, content: base64 })
+			});
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const input = document.querySelector('#modalFields input[data-k="連結"]');
+			if (input) {
+				input.value = filePath; // ghoststory/pic/xxx.jpg
+			}
+			setStatus('✅ 圖片已上傳', 'green');
+			logOp('上傳圖片', filePath);
+		} catch (e) {
+			setStatus('❌ 上傳失敗：' + e.message, 'red');
+		} finally {
+			btn.innerText = '📤 上傳圖片';
+			btn.disabled = false;
+		}
+	};
+	fileInput.click();
+};
