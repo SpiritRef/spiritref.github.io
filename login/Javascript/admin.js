@@ -657,7 +657,7 @@ function renderSvcRows() {
 			`;
 		}
 		const svcDateRaw = it['發佈日期'];
-		const svcDate = (typeof svcDateRaw === 'number') ? new Date((svcDateRaw - 25569) * 86400 * 1000) : new Date(String(svcDateRaw || '').replace(/\\//g, '-').replace(' ', 'T'));
+		const svcDate = (typeof svcDateRaw === 'number') ? new Date((svcDateRaw - 25569) * 86400 * 1000) : new Date(String(svcDateRaw || '').replace(/\\/g, '-').replace(/\//g, '-').replace(' ', 'T'));
 		const svcScheduled = (!isNaN(svcDate.getTime()) && svcDate.getTime() > Date.now()) ? ' ⏳預約' : '';
 		return '<tr><td>' + esc(it['ID'] ?? idx + 1) + '</td>'
 		+ '<td class="title">' + esc(it['標題'] || '') + svcScheduled + '</td>'
