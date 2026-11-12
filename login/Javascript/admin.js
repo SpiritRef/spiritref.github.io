@@ -344,7 +344,11 @@ async function loadLogins() {
 		const eventOpts = [...new Set(items.map(item => item.event_name).filter(Boolean))];
 		const buildOpts = (sel, values) => {
 			if (!sel) return;
+			const current = sel.value;
 			sel.innerHTML = '<option value="">全部</option>' + values.map(v => `<option value="${esc(v).replace(/"/g, '&quot;')}">${esc(v)}</option>`).join('');
+			// 還原原本選項（若該項目仍存在）
+			if (values.includes(current)) sel.value = current;
+			else sel.value = '';
 		};
 		buildOpts(userSel, userOpts);
 		buildOpts(eventSel, eventOpts);
