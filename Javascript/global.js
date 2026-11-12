@@ -150,7 +150,21 @@ async function _getAnalyticsClient() {
 	return _analyticsClient;
 }
 
-export async function trackEvent(eventName, stayTime = 0, pageUrl) {
+function _getSessionId() {
+	if (typeof sessionStorage === 'undefined') return null;
+	let sid = sessionStorage.getItem('analytics_session_id');
+	if (!sid) {
+		sid = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) + '_' + Date.now();
+		sessionStorage.setItem('analytics_session_id', sid);
+	}
+	return sid;
+}
+
+function _fullPageUrl() {
+	return (typeof window !== 'undefined') ? (window.location.pathname + window.location.search) : '';
+}
+
+export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl()) {
 	if (typeof window === 'undefined') return;
 	if (window.location.pathname.startsWith('/login/')) return; // 不追蹤後台
 	try {
@@ -158,8 +172,11 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl) {
 		const payload = {
 			event_name: eventName,
 			stay_time_seconds: stayTime,
-			page_url: pageUrl || window.location.pathname
+			page_url: pageUrl || (window.location.pathname + window.location.search)
 		};
+
+		// session id（同一個分頁同一個）
+		payload.session_id = _getSessionId();
 
 		// 地理座標：每個瀏覽器分頁只抓一次
 		const geoCache = sessionStorage.getItem('user_geo_cache');
@@ -196,12 +213,18 @@ export function initAnalytics() {
 	if (typeof window === 'undefined') return;
 	if (window.location.pathname.startsWith('/login/')) return;
 
-	trackEvent('Page_View');
+	const fullUrl = _fullPageUrl();
+	// 同一個分頁同一篇文章只計一次 Page_View
+	const viewKey = 'analytics_viewed_' + btoa(unescape(encodeURIComponent(fullUrl))).slice(0, 80);
+	if (!sessionStorage.getItem(viewKey)) {
+		sessionStorage.setItem(viewKey, '1');
+		trackEvent('Page_View', 0, fullUrl);
+	}
 
 	let startTime = Date.now();
 	window.addEventListener('beforeunload', () => {
 		const stayTime = Math.floor((Date.now() - startTime) / 1000);
-		trackEvent('Page_Leave', stayTime);
+		trackEvent('Page_Leave', stayTime, fullUrl);
 	});
 }
 
