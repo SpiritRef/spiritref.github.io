@@ -29,6 +29,8 @@
 			.menu-toggle { display: flex; }
 			.analytics-layout.menu-open .sidebar { transform: translateX(0); }
 			.analytics-layout.menu-open #menuOverlay { display: block; }
+			.grid-2 { grid-template-columns: 1fr; }
+			.charts { min-width: 0; }
 		}
 		.sidebar { background: linear-gradient(180deg, #f7ebd7 0%, #e6d3af 100%); border-right: 1px solid #dcbfa2; padding: 20px 10px; display:flex; flex-direction:column; gap:8px; }
 		.sidebar h1 { font-size: 16px; color: #4a2e1b; margin: 0 0 10px 4px; }
@@ -358,17 +360,25 @@
 				L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
 				map.invalidateSize();
 
-				try {
-					L.heatLayer(points, { radius: 35, blur: 25, maxZoom: 12 }).addTo(map);
-				} catch (e) {
-					console.warn('熱力圖繪製失敗：', e);
-				}
+				const drawOverlays = () => {
+					try {
+						L.heatLayer(points, { radius: 35, blur: 25, maxZoom: 12 }).addTo(map);
+					} catch (e) {
+						console.warn('熱力圖繪製失敗：', e);
+					}
+					try {
+						const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
+						if (bounds.isValid()) map.fitBounds(bounds.pad(0.2));
+					} catch (e) {
+						console.warn('fitBounds 失敗：', e);
+					}
+				};
 
-				try {
-					const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
-					if (bounds.isValid()) map.fitBounds(bounds.pad(0.2));
-				} catch (e) {
-					console.warn('fitBounds 失敗：', e);
+				// 等地圖 size 算好、瀏覽器畫完下一幀再畫熱力圖，避免 canvas 寬度為 0
+				if (typeof map.whenReady === 'function') {
+					map.whenReady(() => requestAnimationFrame(drawOverlays));
+				} else {
+					requestAnimationFrame(drawOverlays);
 				}
 			} catch (e) {
 				console.warn('地圖初始化失敗：', e);
