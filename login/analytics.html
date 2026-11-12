@@ -47,6 +47,15 @@
 		.stat .value { font-size: 1.8em; font-weight: 900; color: #8b7355; }
 		.stat .label { font-size: 11px; color: #5c4332; margin-top: 2px; }
 		.chart-wrap { background: rgba(255,255,255,0.8); border: 1px solid #dcbfa2; border-radius: 10px; padding: 14px; position:relative; height:300px; margin-bottom:18px; }
+		.page-detail { background: rgba(255,255,255,0.92); border: 1px solid #dcbfa2; border-radius: 10px; padding: 14px; margin: -8px 0 18px; }
+		.page-detail-header { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+		.page-detail-header strong { color:#4a2e1b; font-size:14px; }
+		.page-detail-close { border:1px solid #dcbfa2; background:#fff; color:#b04a3a; border-radius:6px; padding:5px 12px; cursor:pointer; font-family:inherit; font-weight:bold; }
+		.page-detail-close:hover { background:#fdf0ee; }
+		.page-detail-scroll { max-height: 420px; overflow-y:auto; }
+		.page-detail th { white-space: nowrap; }
+		.page-detail td:first-child { word-break: break-word; }
+		.page-detail tfoot th { background:#faf6f0; color:#4a2e1b; border-bottom:none; }
 		.map-wrap { position: relative; z-index: 0; height: 360px; border-radius: 10px; overflow: hidden; border: 1px solid #dcbfa2; }
 		#map { width: 100%; height: 100%; }
 		.grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
@@ -68,12 +77,17 @@
 		.toolbar select, .toolbar button { padding:7px 12px; border:1px solid #dcbfa2; border-radius:6px; cursor:pointer; font-family:inherit; color:#4a2e1b; background:#fff; font-weight:bold; }
 		.toolbar button:hover { border-color:#8b7355; }
 		.visitor-group { border: 1px solid #dcbfa2; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
-		.visitor-header { background: #faf6f0; padding: 8px 12px; cursor: pointer; display:flex; align-items:center; gap:10px; font-weight:bold; color:#4a2e1b; user-select:none; }
+		.visitor-header { background: #faf6f0; padding: 8px 12px; cursor: pointer; display:flex; align-items:center; gap:10px; row-gap:4px; flex-wrap:wrap; font-weight:bold; color:#4a2e1b; user-select:none; line-height:1.5; }
 		.visitor-header:hover { background: #f0ece4; }
+		.visitor-header > span:nth-child(2) { min-width: 140px; }
 		.visitor-body { border-top: 1px solid #dcbfa2; padding: 8px 12px; display:none; background: rgba(255,255,255,0.6); }
 		.visitor-body.open { display:block; }
-		.visitor-event { padding:4px 0; border-bottom:1px dashed #eee; display:flex; gap:10px; font-size:13px; }
+		.visitor-event { padding:4px 0; border-bottom:1px dashed #eee; display:flex; gap:10px; font-size:13px; align-items:baseline; flex-wrap:wrap; }
 		.visitor-event:last-child { border-bottom:none; }
+		.ev-link { color:#8b7355; font-weight:bold; text-decoration:none; word-break:break-all; }
+		.ev-link:hover { text-decoration:underline; }
+		.from-tag { background:#b04a3a; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; }
+		.visitor-meta { padding:2px 2px 8px; border-bottom:1px dashed #eee; margin-bottom:8px; font-size:12px; color:#8b7355; display:flex; gap:14px; flex-wrap:wrap; }
 		.path-tag { background:#8b7355; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; }
 		.geo-list { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
 		.geo-pill { background: rgba(255,255,255,0.8); border:1px solid #dcbfa2; padding:4px 10px; border-radius:6px; font-size:12px; }
@@ -138,13 +152,21 @@
 					<div>
 						<h3>頁面瀏覽分佈（次）</h3>
 						<div class="chart-wrap"><canvas id="topPagesChart"></canvas></div>
+						<div class="unit" style="margin-top:6px;">💡 點擊柱狀圖可查看該分類的頁面明細</div>
+						<div id="topPagesDetail" class="page-detail" style="display:none;">
+							<div class="page-detail-header">
+								<strong id="topPagesDetailTitle"></strong>
+								<button id="topPagesDetailClose" class="page-detail-close" type="button">✕ 關閉</button>
+							</div>
+							<div id="topPagesDetailBody"></div>
+						</div>
 					</div>
 				</div>
 				<div class="card" style="margin-bottom:0;">
 					<h3 style="margin-bottom:8px;">🌍 訪客地理分佈（人數）</h3>
 					<div class="map-wrap"><div id="map"></div></div>
 					<div class="geo-footer">
-						<div class="map-footer" style="margin:0;"><strong>各城市訪客數</strong></div>
+						<div class="map-footer" style="margin:0;"><strong>各城市訪客數（人）</strong></div>
 						<div class="geo-list" id="geoList"></div>
 					</div>
 				</div>
@@ -154,7 +176,7 @@
 		<!-- 熱門文章 -->
 		<section id="panelArticles" class="panel" style="display:none;">
 			<div class="card">
-				<h2>🔥 熱門文章 Top 100（次）</h2>
+				<h2>🔥 熱門文章 Top 100</h2>
 				<div id="topArticles"></div>
 			</div>
 		</section>
@@ -162,7 +184,7 @@
 		<!-- 熱門彙典 -->
 		<section id="panelCompendium" class="panel" style="display:none;">
 			<div class="card">
-				<h2>📖 熱門彙典 Top 100（次）</h2>
+				<h2>📖 熱門彙典 Top 100</h2>
 				<div id="topCompendium"></div>
 			</div>
 		</section>
@@ -193,13 +215,25 @@
 	import { requireAdmin, getSupabase, onAuthChange, logoutAndGo } from './Javascript/adminAuth.js?v=20261212';
 
 	const $ = (id) => document.getElementById(id);
-	const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+	const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 	document.getElementById('logoutBtn').onclick = () => logoutAndGo('./');
+
+	const pageDetailClose = document.getElementById('topPagesDetailClose');
+	if (pageDetailClose) pageDetailClose.addEventListener('click', () => {
+		selectedPageCategory = null;
+		const b = $('topPagesDetail');
+		if (b) b.style.display = 'none';
+	});
 
 	let chartTrend = null;
 	let chartPages = null;
 	let map = null;
+	let itemsCache = [];
+	let postsMapCache = new Map();
+	let servicesMapCache = new Map();
+	let topPagesSorted = [];
+	let selectedPageCategory = null;
 
 	// ---------- helpers ----------
 	async function fetchJson(url) {
@@ -231,6 +265,91 @@
 		if (path === '/services/' || path === '/services') return '服務首頁';
 		if (path.startsWith('/services/consult')) return '諮詢表單';
 		return path;
+	}
+
+	// 產生「可點擊的頁面詳情」HTML：文章/彙典帶入 JSON 標題，否則顯示頁面名稱並連結
+	const pageLink = (href, text) => `<a class="ev-link" href="${esc(href)}" target="_blank" rel="noopener">${text}</a>`;
+
+	function pageDetailHtml(rawUrl, postsMap, servicesMap) {
+		const url = rawUrl || '/';
+		const path = url.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
+		const q = parseQuery(url);
+		const fromNotice = q.from === 'notices';
+		const noticeTag = fromNotice ? ' <span class="from-tag">公告來源</span>' : '';
+
+		if (path.startsWith('/ghoststory/article/') && q.id) {
+			const pid = String(q.id);
+			const postId = pid.includes('_') ? pid.split('_')[0] : pid;
+			const p = postsMap.get(String(postId));
+			const title = (p && p['標題']) ? String(p['標題']) : `ID ${pid}`;
+			return pageLink(`/ghoststory/article/?id=${encodeURIComponent(pid)}`, `日誌文章：${esc(title)}`) + noticeTag;
+		}
+		if (path.startsWith('/services/compendium/detail.html') && q.id) {
+			const s = servicesMap.get(String(q.id));
+			const title = (s && s['標題']) ? String(s['標題']) : `ID ${q.id}`;
+			return pageLink(`/services/compendium/detail.html?id=${encodeURIComponent(q.id)}`, `彙典：${esc(title)}`) + noticeTag;
+		}
+		// 其他固定頁面：顯示名稱並可點擊（保持原路徑）
+		return pageLink(path, esc(simplifyPage(url))) + noticeTag;
+	}
+
+	// 依正規化 URL 分組（文章/彙典以 id 為鍵，忽略 from=notices 等 utm 差異）
+	function normalizePageKey(url) {
+		const raw = url || '/';
+		const path = raw.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
+		const q = parseQuery(raw);
+		const idPaths = ['/ghoststory/article/', '/services/compendium/detail.html', '/services/'];
+		if (q.id && idPaths.some(p => path.startsWith(p))) return path + '?id=' + q.id;
+		if (path.startsWith('/services/notices')) return '/services/notices' + (q.from ? '?from=' + q.from : '');
+		return path;
+	}
+
+	function breakdownNameHtml(key) {
+		const [path, qs] = key.split('?');
+		const q = parseQuery('?' + (qs || ''));
+		const idNote = (id) => ` <span style="font-size:11px;color:#b0a08d;">${esc(id)}</span>`;
+		if (path.startsWith('/ghoststory/article/') && q.id) {
+			const pid = String(q.id);
+			const postId = pid.includes('_') ? pid.split('_')[0] : pid;
+			const p = postsMapCache.get(String(postId)) || {};
+			const title = p['標題'] || `PostID ${postId}`;
+			return pageLink(`/ghoststory/article/?id=${encodeURIComponent(pid)}`, `日誌文章：${esc(title)}`) + idNote(pid);
+		}
+		if (path.startsWith('/services/compendium/detail.html') && q.id) {
+			const s = servicesMapCache.get(String(q.id)) || {};
+			const title = s['標題'] || `ID ${q.id}`;
+			return pageLink(`/services/compendium/detail.html?id=${encodeURIComponent(q.id)}`, `彙典：${esc(title)}`) + idNote(q.id);
+		}
+		return pageLink(key, esc(simplifyPage(key)));
+	}
+
+	// 點柱狀圖後：顯示該分類每個頁面的明細（瀏覽/累積/平均/最長）
+	function renderTopPagesDetail(cat) {
+		const box = $('topPagesDetail');
+		if (!box) return;
+		const groups = {};
+		itemsCache.forEach(i => {
+			if (simplifyPage(i.page_url || '/') !== cat) return;
+			const key = normalizePageKey(i.page_url || '/');
+			if (!groups[key]) groups[key] = { key, views: 0, totalStay: 0, leaves: 0, maxStay: 0 };
+			const g = groups[key];
+			if (i.event_name === 'Page_View') g.views++;
+			if (i.event_name === 'Page_Leave' && i.stay_time_seconds != null) {
+				const s = Number(i.stay_time_seconds) || 0;
+				g.totalStay += s;
+				g.leaves++;
+				if (s > g.maxStay) g.maxStay = s;
+			}
+		});
+		const rows = Object.values(groups).sort((a, b) => (b.views - a.views) || (b.totalStay - a.totalStay));
+		const totals = rows.reduce((acc, r) => { acc.views += r.views; acc.totalStay += r.totalStay; return acc; }, { views: 0, totalStay: 0 });
+		$('topPagesDetailTitle').innerHTML = `${esc(cat)} 頁面明細（${rows.length} 頁 · 共 ${totals.views} 次瀏覽 · 累積停留 ${totals.totalStay}s）`;
+		$('topPagesDetailBody').innerHTML = rows.length
+			? `<div class="page-detail-scroll"><table class="data"><thead><tr><th>頁面</th><th>瀏覽</th><th>累積秒數</th><th>平均停留</th><th>最長停留</th></tr></thead><tbody>`
+				+ rows.map(r => `<tr><td>${breakdownNameHtml(r.key)}</td><td>${r.views} 次</td><td>${r.totalStay}s</td><td>${r.leaves ? Math.round(r.totalStay / r.leaves) + 's' : '-'}</td><td>${r.maxStay}s</td></tr>`).join('')
+				+ `</tbody><tfoot><tr><th>合計</th><th>${totals.views} 次</th><th>${totals.totalStay}s</th><th>–</th><th>–</th></tr></tfoot></table></div>`
+			: '<div style="color:#8b7355;">此分類尚無資料</div>';
+		box.style.display = 'block';
 	}
 
 	function shortSessionId(sid) {
@@ -271,26 +390,33 @@
 		const total = items.length;
 		const uniqueSessions = new Set(items.map(i => i.session_id).filter(Boolean)).size;
 		const uniquePages = new Set(items.map(i => simplifyPage(i.page_url || '/'))).size;
-		const stays = items.filter(i => i.stay_time_seconds != null).map(i => i.stay_time_seconds || 0);
+		const stays = items.filter(i => i.event_name === 'Page_Leave' && i.stay_time_seconds != null).map(i => i.stay_time_seconds || 0);
 		const totalStay = stays.reduce((a, b) => a + b, 0);
 		const avg = stays.length ? Math.round(totalStay / stays.length) : 0;
 		const today = items.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length;
 
-		// map simplified category → count
+		// map simplified category → count（只計算 Page_View，一次瀏覽算一次）
 		const pageCount = {};
 		items.forEach(i => {
+			if (i.event_name !== 'Page_View') return;
 			const p = simplifyPage(i.page_url || '/');
-			pageCount[p] = (pageCount[p] || 0) + 1;
+			if (p) pageCount[p] = (pageCount[p] || 0) + 1;
 		});
 
-		// map city counts for geo list
-		const cityCount = {};
+		// map city counts for geo list（不重複訪客人數，非瀏覽次數）
+		const cityMap = {};
 		items.forEach(i => {
 			const c = (i.city || i.country_name || '').trim();
-			if (c) cityCount[c] = (cityCount[c] || 0) + 1;
+			if (!c) return;
+			if (!cityMap[c]) cityMap[c] = { sessions: new Set(), noSession: 0 };
+			if (i.session_id) cityMap[c].sessions.add(i.session_id);
+			else cityMap[c].noSession++;
 		});
-		const geoList = Object.entries(cityCount).sort((a, b) => b[1] - a[1]).slice(0, 20);
-		$('geoList').innerHTML = geoList.map(([name, count]) => `<span class="geo-pill">${esc(name)} · ${count}</span>`).join('') || '<span style="color:#8b7355;">尚無地理資料</span>';
+		const geoList = Object.entries(cityMap)
+			.map(([name, v]) => [name, v.sessions.size + v.noSession])
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 20);
+		$('geoList').innerHTML = geoList.map(([name, count]) => `<span class="geo-pill">${esc(name)} · ${count} 人</span>`).join('') || '<span style="color:#8b7355;">尚無地理資料</span>';
 		$('totalViews').innerText = total;
 		$('uniqueVisitors').innerText = uniqueSessions;
 		$('uniquePages').innerText = uniquePages;
@@ -299,8 +425,13 @@
 		$('todayViews').innerText = today;
 		$('uniqueVisitorsLarge').innerText = uniqueSessions;
 
+		itemsCache = items;
+		postsMapCache = postsMap;
+		servicesMapCache = servicesMap;
+
 		// --- Top pages chart ---
 		const sorted = Object.entries(pageCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+		topPagesSorted = sorted;
 		const ctx2 = $('topPagesChart').getContext('2d');
 		if (chartPages) chartPages.destroy();
 		chartPages = new Chart(ctx2, {
@@ -317,9 +448,27 @@
 				responsive: true,
 				maintainAspectRatio: false,
 				plugins: { legend: { display: false } },
-				scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+				scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+				onHover: (evt, elements) => { const t = evt?.native?.target; if (t) t.style.cursor = elements.length ? 'pointer' : 'default'; },
+				onClick: (evt, elements) => {
+					if (!elements || !elements.length) return;
+					const idx = elements[0].index;
+					const cat = topPagesSorted[idx] && topPagesSorted[idx][0];
+					if (!cat) return;
+					selectedPageCategory = cat;
+					renderTopPagesDetail(cat);
+				}
 			}
 		});
+
+		// 重新載入後若先前有選取的分類，保持明細區塊顯示
+		if (selectedPageCategory && pageCount[selectedPageCategory] != null) {
+			renderTopPagesDetail(selectedPageCategory);
+		} else if (selectedPageCategory) {
+			selectedPageCategory = null;
+			const b = $('topPagesDetail');
+			if (b) b.style.display = 'none';
+		}
 
 		// --- Trend chart ---
 		const dayMap = {};
@@ -460,25 +609,37 @@
 			if (!sessionMap[sid]) sessionMap[sid] = [];
 			sessionMap[sid].push(i);
 		});
-		const sessions = Object.entries(sessionMap).sort((a, b) => b[1][0].created_at.localeCompare(a[1][0].created_at));
+		const fmtDT = (iso) => { try { return new Date(iso).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
+		const sessions = Object.entries(sessionMap).sort((a, b) => (b[1][b[1].length - 1] || {}).created_at?.localeCompare((a[1][a[1].length - 1] || {}).created_at) || 0);
 		$('visitorGroups').innerHTML = sessions.map(([sid, events]) => {
 			const totalStayTime = events.reduce((s, e) => s + (e.stay_time_seconds || 0), 0);
-			const latest = events[events.length - 1] || events[0];
+			const first = events[0];
+			const latest = events[events.length - 1] || first;
 			const latestStr = latest ? new Date(latest.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '';
-			const pages = [...new Set(events.map(e => simplifyPage(e.page_url || '/')))].join(', ');
-			const city = (latest?.city || latest?.country_name || '').trim();
-			const eventsHtml = events.slice().reverse().map(e => {
+			const firstStr = first ? fmtDT(first.created_at) : '';
+			const locParts = [latest?.country_name, latest?.region, latest?.city].filter(Boolean);
+			const loc = locParts.filter((p, i, arr) => i === 0 || String(p).trim().toLowerCase() !== String(arr[i - 1]).trim().toLowerCase()).join(' · ');
+			const viewCount = events.filter(e => e.event_name === 'Page_View').length;
+			const pageCounter = {};
+			events.forEach(e => { const k = simplifyPage(e.page_url || '/'); pageCounter[k] = (pageCounter[k] || 0) + 1; });
+			const pages = Object.entries(pageCounter).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}×${v}`).join('、');
+			const uniquePageCount = Object.keys(pageCounter).length;
+			const eventsHtml = `
+				<div class="visitor-meta">
+					<span>首次來訪：${esc(firstStr)}</span>
+					<span>造訪頁面：${uniquePageCount} 頁</span>
+					<span>位置：${esc(loc || '未知')}</span>
+				</div>` + events.slice().reverse().map(e => {
 				const et = new Date(e.created_at).toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit' });
-				const ep = simplifyPage(e.page_url || '/');
 				const dur = e.stay_time_seconds != null ? e.stay_time_seconds + 's' : '-';
-				return `<div class="visitor-event"><span style="color:#8b7355;">${esc(et)}</span><span class="path-tag">${esc(e.event_name)}</span><span>${esc(ep)}</span><span style="color:#5c4332;">${dur}</span></div>`;
+				return `<div class="visitor-event"><span style="color:#8b7355;">${esc(et)}</span><span class="path-tag">${esc(e.event_name)}</span><span>${pageDetailHtml(e.page_url, postsMap, servicesMap)}</span><span style="color:#5c4332;">${esc(dur)}</span></div>`;
 			}).join('');
 			return `
 				<div class="visitor-group">
 					<div class="visitor-header" data-sid="${esc(sid)}">
 						<span style="color:#8b7355;">#${esc(shortSessionId(sid))}</span>
-						<span style="flex:1;color:#4a2e1b;">${esc(city || '未知城市')} · ${esc(pages)}</span>
-						<span style="font-size:12px;color:#5c4332;">${events.length} 次 · ${totalStayTime}s · ${esc(latestStr)}</span>
+						<span style="flex:1;color:#4a2e1b;">${esc(loc || '未知位置')} · ${esc(pages)}</span>
+						<span style="font-size:12px;color:#5c4332;">${events.length} 次（瀏覽 ${viewCount}） · ${totalStayTime}s · ${esc(latestStr)}</span>
 						<span class="toggle-arrow">▶</span>
 					</div>
 					<div class="visitor-body" id="vb-${esc(sid)}">${eventsHtml}</div>
