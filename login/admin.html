@@ -89,6 +89,7 @@
 		<button data-tab="images">🖼️ 圖片</button>
 		<button data-tab="sys">🩺 系統</button>
 		<button data-tab="clientpush">📣 推播</button>
+		<button data-tab="logins">🔑 登入紀錄</button>
 	</div>
 
 	<section id="tab-posts" class="panel">
@@ -176,8 +177,20 @@
 		<table class="data"><thead><tr><th>項目</th><th>狀態</th><th>說明</th></tr></thead>
 		<tbody id="healthRows"><tr><td colspan="3">尚未檢測</td></tr></tbody></table>
 		<h3>操作紀錄（本機＋共用，保留 3 個月）</h3>
-	<div class="toolbar"><select id="oplogDev"><option value="">全部裝置</option></select></div>
+	<div class="toolbar"><select id="oplogUser"><option value="">全部使用者</option></select> <select id="oplogDev"><option value="">全部裝置</option></select></div>
 		<div id="oplog">（空）</div>
+	</section>
+
+	<section id="tab-logins" class="panel">
+		<div class="toolbar">
+			<select id="loginsUser"><option value="">全部使用者</option></select>
+			<select id="loginsEvent"><option value="">全部事件</option></select>
+			<button id="loginsReload" class="ghost">重新載入</button>
+		</div>
+		<div style="overflow-x:auto;">
+		<table class="data"><thead><tr><th>時間</th><th>事件</th><th>使用者</th><th>IP</th><th>位置</th><th>裝置</th></tr></thead>
+		<tbody id="loginRows"><tr><td colspan="6">尚未載入</td></tr></tbody></table>
+		</div>
 	</section>
 
 	<section id="tab-clientpush" class="panel">
@@ -214,7 +227,7 @@
 </script>
 <script type="module">
 	import { requireAdmin, logoutAndGo, onAuthChange } from './Javascript/adminAuth.js?v=20261212';
-	import { initAdmin } from './Javascript/admin.js?v=20261212';
+	import { initAdmin } from './Javascript/admin.js?v=20261212b';
 	try {
 		const session = await requireAdmin('./');
 		if (session) {

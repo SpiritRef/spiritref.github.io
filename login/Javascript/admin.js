@@ -287,7 +287,7 @@ function deviceLabel() {
 		else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) br = 'Safari';
 		else if (/Firefox\//i.test(ua)) br = 'Firefox';
 		else if (/LINE\//i.test(ua)) br = 'LINE內建';
-		return `${os}${br ? '·' + br : ''} ${window.innerWidth}x${window.innerHeight}`;
+		return `${os}${br ? '·' + br : ''}`;
 	} catch (e) { return '未知裝置'; }
 }
 
@@ -305,6 +305,14 @@ function refreshDevFilter(list) {
 	sel.innerHTML = '<option value="">全部裝置</option>' + devs.map(d => `<option value="${esc(d).replace(/"/g, '&quot;')}"${d === cur ? ' selected' : ''}>${esc(d)}</option>`).join('');
 }
 
+function refreshUserFilter(list) {
+	const sel = $('oplogUser');
+	if (!sel) return;
+	const cur = sel.value;
+	const users = [...new Set((list || []).map(e => e && e.user_email).filter(Boolean))];
+	sel.innerHTML = '<option value="">全部使用者</option>' + users.map(u => `<option value="${esc(u).replace(/"/g, '&quot;')}"${u === cur ? ' selected' : ''}>${esc(u)}</option>`).join('');
+}
+
 async function loadOplogFromDb() {
 	try {
 		const sb = await getSupabase();
@@ -317,11 +325,47 @@ async function loadOplogFromDb() {
 	}
 }
 
+async function loadLogins() {
+	try {
+		const sb = await getSupabase();
+		const { data, error } = await sb.from('admin_login_events').select('*').order('created_at', { ascending: false }).limit(200);
+		if (error) throw error;
+		const items = data || [];
+
+		const userSel = $('loginsUser');
+		const eventSel = $('loginsEvent');
+		const userOpts = [...new Set(items.map(item => item.user_email).filter(Boolean))];
+		const eventOpts = [...new Set(items.map(item => item.event_name).filter(Boolean))];
+		const buildOpts = (sel, values) => {
+			if (!sel) return;
+			sel.innerHTML = '<option value="">全部</option>' + values.map(v => `<option value="${esc(v).replace(/"/g, '&quot;')}">${esc(v)}</option>`).join('');
+		};
+		buildOpts(userSel, userOpts);
+		buildOpts(eventSel, eventOpts);
+
+		const userFilter = ($('loginsUser') && $('loginsUser').value) || '';
+		const eventFilter = ($('loginsEvent') && $('loginsEvent').value) || '';
+		const filtered = items.filter(item => (!userFilter || item.user_email === userFilter) && (!eventFilter || item.event_name === eventFilter));
+		$('loginRows').innerHTML = filtered.map(item => {
+			const t = new Date(item.created_at).toLocaleString();
+			const pos = [item.city, item.region, item.country_name].filter(Boolean).join(' · ');
+			const devMatch = (item.user_agent || '').match(/Android|iPhone|iPad|Linux|Windows|Macintosh|Mac/);
+			const dev = devMatch ? devMatch[0] : '其他裝置';
+			return `<tr><td>${esc(t)}</td><td>${esc(item.event_name || '')}</td><td>${esc(item.user_email || '')}</td><td>${esc(item.ip || '')}</td><td>${esc(pos || '')}</td><td>${esc(dev)}</td></tr>`;
+		}).join('') || '<tr><td colspan="6">（空）</td></tr>';
+	} catch (e) {
+		console.warn('讀取登入紀錄失敗:', e);
+		$('loginRows').innerHTML = `<tr><td colspan="6">讀取失敗：${esc(e.message || String(e))}</td></tr>`;
+	}
+}
+
 async function renderOplog() {
 	const list = await loadOplogFromDb();
 	refreshDevFilter(list);
+	refreshUserFilter(list);
 	const devFilter = ($('oplogDev') && $('oplogDev').value) || '';
-	const filtered = list.filter(e => !devFilter || (e && e.device) === devFilter);
+	const userFilter = ($('oplogUser') && $('oplogUser').value) || '';
+	const filtered = list.filter(e => (!devFilter || (e && e.device) === devFilter) && (!userFilter || (e && e.user_email) === userFilter));
 	const el = $('oplog');
 	if (el) el.innerText = filtered.length ? filtered.map(oplogText).join('\n') : '（空）';
 }
@@ -964,6 +1008,7 @@ export async function initAdmin(sess) {
 			imgLoaded = true;
 			loadImages();
 		}
+		if (b.dataset.tab === 'logins') loadLogins();
 		if (b.dataset.tab === 'posts' && !allPosts.length) loadPosts();
 		if (b.dataset.tab === 'notices' && !allNotices.length) loadNotices();
 	});
@@ -1080,6 +1125,10 @@ export async function initAdmin(sess) {
 
 	$('healthBtn').onclick = healthCheck;
 	$('oplogDev').onchange = renderOplog;
+	$('oplogUser').onchange = renderOplog;
+	$('loginsReload').onclick = loadLogins;
+	$('loginsUser').onchange = loadLogins;
+	$('loginsEvent').onchange = loadLogins;
 	$('syncPostsBtn').onclick = rebuildVersion;
 	$('saveAllBtn').onclick = saveAll;
 	$('discardBtn').onclick = discardAll;
