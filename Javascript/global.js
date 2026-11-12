@@ -130,3 +130,57 @@ export async function getRemoteVersion() {
         return JSON.stringify(await r.json());
     } catch (e) { return null; }
 }
+
+// ---------- 全站分析追蹤 ----------
+const ANALYTICS_FALLBACK_URL = 'https://ocqycgcatxdbpffpxdva.supabase.co';
+const ANALYTICS_FALLBACK_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jcXljZ2NhdHhkYnBmZnB4ZHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NjcxODksImV4cCI6MjEwNzA0MzE4OX0.ZmE5XI1LZdnZ3LagFDhcqaLqh-u3T8dtIFyBTHYzDOw';
+let _analyticsClient = null;
+
+async function _getAnalyticsClient() {
+	if (_analyticsClient) return _analyticsClient;
+	const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+	let url = ANALYTICS_FALLBACK_URL;
+	let key = ANALYTICS_FALLBACK_ANON;
+	try {
+		const cfg = await getIni('/settings/global.ini');
+		if (cfg?.SUPABASE_URL) url = cfg.SUPABASE_URL;
+		if (cfg?.SUPABASE_ANON_KEY) key = cfg.SUPABASE_ANON_KEY;
+	} catch (e) {}
+	_analyticsClient = createClient(url, key);
+	return _analyticsClient;
+}
+
+export async function trackEvent(eventName, stayTime = 0, pageUrl) {
+	if (typeof window === 'undefined') return;
+	if (window.location.pathname.startsWith('/login/')) return; // 不追蹤後台
+	try {
+		const sb = await _getAnalyticsClient();
+		const payload = {
+			event_name: eventName,
+			stay_time_seconds: stayTime,
+			page_url: pageUrl || window.location.pathname
+		};
+		const { error } = await sb.from('user_events').insert([payload]);
+		if (error) console.warn('Analytics 寫入失敗:', error);
+	} catch (e) {
+		console.warn('Analytics 失敗:', e);
+	}
+}
+
+export function initAnalytics() {
+	if (typeof window === 'undefined') return;
+	if (window.location.pathname.startsWith('/login/')) return;
+
+	trackEvent('Page_View');
+
+	let startTime = Date.now();
+	window.addEventListener('beforeunload', () => {
+		const stayTime = Math.floor((Date.now() - startTime) / 1000);
+		trackEvent('Page_Leave', stayTime);
+	});
+}
+
+// 自動追蹤（打開任意公開頁面時都會執行）
+if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login/')) {
+	initAnalytics();
+}
