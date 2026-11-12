@@ -69,6 +69,9 @@
 		<button class="sidebar-btn" data-panel="panelCompendium">📖 熱門彙典</button>
 		<button class="sidebar-btn" data-panel="panelRecent">📑 最近事件</button>
 		<button class="sidebar-btn" data-panel="panelVisitors">👤 訪客</button>
+		<div style="margin-top:auto; padding-top:16px; border-top:1px solid #dcbfa2;">
+			<button id="logoutBtn" class="sidebar-btn" style="color:#b04a3a; font-weight:bold;">🚪 登出</button>
+		</div>
 	</aside>
 
 	<!-- 右側主內容 -->
@@ -148,10 +151,12 @@
 </div>
 
 <script type="module">
-	import { requireAdmin, getSupabase, onAuthChange } from './Javascript/adminAuth.js?v=20261212';
+	import { requireAdmin, getSupabase, onAuthChange, logoutAndGo } from './Javascript/adminAuth.js?v=20261212';
 
 	const $ = (id) => document.getElementById(id);
 	const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+	document.getElementById('logoutBtn').onclick = () => logoutAndGo('./');
 
 	let chartTrend = null;
 	let chartPages = null;
@@ -177,7 +182,7 @@
 	}
 
 	function simplifyPage(url) {
-		const path = url.split('?')[0];
+		const path = url.split('?')[0].replace(/index\.html$/, '/');
 		if (path === '/') return '首頁';
 		if (path.startsWith('/ghoststory/article/')) return '日誌文章';
 		if (path === '/ghoststory/' || path === '/ghoststory') return '日誌首頁';
