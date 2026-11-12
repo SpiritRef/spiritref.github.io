@@ -12,46 +12,67 @@
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 	<link rel="stylesheet" href="https://spiritref.github.io/CSS/global.css">
 	<style>
-		body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f8f9fa; padding: 20px; margin: 0; color: #3e2723; }
-		.card { background: linear-gradient(135deg, #f7ebd7 0%, #e6d3af 100%); border: 1px solid #dcbfa2; border-left: 5px solid #8b7355; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-		h2 { color: #4a2e1b; margin-top: 0; display:flex; align-items:center; gap:10px; }
-		.stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin: 10px 0 20px; }
-		.stat { background: rgba(255,255,255,0.7); border: 1px solid #dcbfa2; border-radius: 10px; padding: 15px; text-align:center; }
-		.stat .value { font-size: 2em; font-weight: 900; color: #8b7355; }
-		.stat .label { font-size: 13px; color: #5c4332; margin-top: 4px; }
-		.charts { display:grid; grid-template-columns: 1fr; gap: 20px; }
-		.chart-wrap { background: rgba(255,255,255,0.7); border: 1px solid #dcbfa2; border-radius: 10px; padding: 15px; position:relative; height:320px; }
-		.map-wrap { height: 420px; border-radius: 10px; overflow: hidden; border: 1px solid #dcbfa2; }
+		body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f8f9fa; padding: 0; margin: 0; color: #3e2723; }
+		.analytics-layout { display: grid; grid-template-columns: 180px 1fr; min-height: 100vh; }
+		.sidebar { background: linear-gradient(180deg, #f7ebd7 0%, #e6d3af 100%); border-right: 1px solid #dcbfa2; border-left: none; padding: 20px 10px; }
+		.sidebar h1 { font-size: 16px; color: #4a2e1b; margin: 0 0 16px 4px; }
+		.sidebar-btn { display: block; width: 100%; text-align: left; padding: 10px 12px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: bold; color: #5c4332; margin-bottom: 4px; transition: all 0.2s; }
+		.sidebar-btn:hover { background: rgba(139, 115, 85, 0.1); }
+		.sidebar-btn.active { background: #8b7355; color: #fff; }
+		.main-content { padding: 24px; }
+		.card { background: rgba(255,255,255,0.7); border: 1px solid #dcbfa2; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+		h2 { color: #4a2e1b; margin-top: 0; font-size: 20px; }
+		.stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 20px; }
+		.stat { background: rgba(255,255,255,0.8); border: 1px solid #dcbfa2; border-radius: 10px; padding: 14px; text-align:center; }
+		.stat .value { font-size: 1.8em; font-weight: 900; color: #8b7355; }
+		.stat .label { font-size: 12px; color: #5c4332; margin-top: 2px; }
+		.charts { display:grid; grid-template-columns: 1fr; gap: 18px; margin-bottom: 18px; }
+		.chart-wrap { background: rgba(255,255,255,0.8); border: 1px solid #dcbfa2; border-radius: 10px; padding: 15px; position:relative; height:300px; }
+		.map-wrap { height: 360px; border-radius: 10px; overflow: hidden; border: 1px solid #dcbfa2; }
 		#map { width: 100%; height: 100%; }
-		.geo-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-		.geo-pill { background: rgba(255,255,255,0.8); border:1px solid #dcbfa2; padding:6px 12px; border-radius:20px; font-size:13px; }
+		.grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
+		@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
 		.rank-list { list-style:none; padding:0; }
-		.rank-item { background: rgba(255,255,255,0.7); border:1px solid #dcbfa2; border-radius:8px; padding:10px 12px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start; }
-		.rank-num { background:#8b7355; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0; }
+		.rank-item { background: rgba(255,255,255,0.8); border:1px solid #dcbfa2; border-radius:8px; padding:10px 12px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start; }
+		.rank-num { background:#8b7355; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0; font-size:13px; }
 		.rank-body { flex:1; min-width:0; }
 		.rank-title { font-weight:bold; color:#4a2e1b; margin-bottom:2px; }
-		.rank-desc { font-size:13px; color:#5c4332; margin-bottom:6px; }
+		.rank-desc { font-size:13px; color:#5c4332; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 		.rank-meta { font-size:12px; color:#8b7355; }
 		.rank-meta a { color:#8b7355; text-decoration:none; font-weight:bold; }
 		.rank-meta a:hover { text-decoration:underline; }
-		table.data { width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
+		table.data { width:100%; border-collapse:collapse; font-size:14px; }
 		table.data th, table.data td { border-bottom:1px solid #eee; padding:8px; text-align:left; vertical-align:top; }
 		table.data th { background:#faf6f0; color:#4a2e1b; }
-		.toolbar { display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap; align-items:center; }
-		.toolbar select, .toolbar button { padding:8px 14px; border:1px solid #dcbfa2; border-radius:6px; cursor:pointer; font-family:inherit; color:#4a2e1b; background:#fff; font-weight:bold; }
+		.toolbar { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+		.toolbar select, .toolbar button { padding:8px 12px; border:1px solid #dcbfa2; border-radius:6px; cursor:pointer; font-family:inherit; color:#4a2e1b; background:#fff; font-weight:bold; }
 		.toolbar button:hover { border-color:#8b7355; }
-		.grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
-		@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-		.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
-		@media (max-width: 1100px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
-		@media (max-width: 700px) { .grid-3 { grid-template-columns: 1fr; } }
+		.visitor-group { border: 1px solid #dcbfa2; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+		.visitor-header { background: #faf6f0; padding: 8px 12px; cursor: pointer; display:flex; align-items:center; gap:10px; font-weight:bold; color:#4a2e1b; user-select:none; }
+		.visitor-header:hover { background: #f0ece4; }
+		.visitor-body { border-top: 1px solid #dcbfa2; padding: 8px 12px; display:none; background: rgba(255,255,255,0.6); }
+		.visitor-body.open { display:block; }
+		.visitor-event { padding:4px 0; border-bottom:1px dashed #eee; display:flex; gap:10px; font-size:13px; }
+		.visitor-event:last-child { border-bottom:none; }
+		.path-tag { background:#8b7355; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; }
 	</style>
 </head>
 <body>
 
-<div id="adminRoot">
-	<div class="card">
-		<h2>📊 分析儀表板</h2>
+<div class="analytics-layout">
+	<!-- 左側選單 -->
+	<aside class="sidebar">
+		<h1>📊 分析儀表板</h1>
+		<button class="sidebar-btn active" data-panel="panelOverview">🏠 總覽</button>
+		<button class="sidebar-btn" data-panel="panelArticles">🔥 熱門文章</button>
+		<button class="sidebar-btn" data-panel="panelCompendium">📖 熱門彙典</button>
+		<button class="sidebar-btn" data-panel="panelRecent">📑 最近事件</button>
+		<button class="sidebar-btn" data-panel="panelVisitors">👤 訪客</button>
+	</aside>
+
+	<!-- 右側主內容 -->
+	<main class="main-content">
 		<div id="adminUser" style="font-size:12px;color:#8b7355;margin-bottom:12px;">驗證登入中...</div>
 
 		<div class="toolbar">
@@ -64,68 +85,66 @@
 			<button id="reloadBtn">🔄 重新載入</button>
 		</div>
 
-		<div class="stats">
-			<div class="stat">
-				<div class="value" id="totalViews">-</div>
-				<div class="label">總瀏覽量</div>
+		<!-- 總覽 -->
+		<section id="panelOverview" class="panel active">
+			<div class="stats">
+				<div class="stat"><div class="value" id="totalViews">-</div><div class="label">總瀏覽量</div></div>
+				<div class="stat"><div class="value" id="uniqueVisitors">-</div><div class="label">不重複訪客</div></div>
+				<div class="stat"><div class="value" id="uniquePages">-</div><div class="label">不重複頁面</div></div>
+				<div class="stat"><div class="value" id="totalStay">-</div><div class="label">總停留秒數</div></div>
+				<div class="stat"><div class="value" id="avgStay">-</div><div class="label">平均停留（秒）</div></div>
+				<div class="stat"><div class="value" id="todayViews">-</div><div class="label">今日瀏覽</div></div>
+				<div class="stat"><div class="value" id="topCity">-</div><div class="label">最多訪客城市</div></div>
 			</div>
-			<div class="stat">
-				<div class="value" id="uniqueVisitors">-</div>
-				<div class="label">不重複訪客</div>
+			<div class="grid-2">
+				<div class="charts">
+					<div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+					<div class="chart-wrap"><canvas id="topPagesChart"></canvas></div>
+				</div>
+				<div class="card" style="margin-bottom:0;">
+					<div class="map-wrap"><div id="map"></div></div>
+					<h3 style="margin:16px 0 4px; font-size:16px; color:#4a2e1b;">🌍 訪客地理分佈</h3>
+					<div class="geo-list" id="geoList"></div>
+				</div>
 			</div>
-			<div class="stat">
-				<div class="value" id="uniquePages">-</div>
-				<div class="label">不重複頁面</div>
-			</div>
-			<div class="stat">
-				<div class="value" id="totalStay">-</div>
-				<div class="label">總停留秒數</div>
-			</div>
-			<div class="stat">
-				<div class="value" id="avgStay">-</div>
-				<div class="label">平均停留（秒）</div>
-			</div>
-			<div class="stat">
-				<div class="value" id="todayViews">-</div>
-				<div class="label">今日瀏覽</div>
-			</div>
-			<div class="stat">
-				<div class="value" id="topPage">-</div>
-				<div class="label">最熱門頁面</div>
-			</div>
-			<div class="stat">
-				<div class="value" id="topCity">-</div>
-				<div class="label">最多訪客城市</div>
-			</div>
-		</div>
+		</section>
 
-		<div class="grid-2">
-			<div class="charts">
-				<div class="chart-wrap"><canvas id="trendChart"></canvas></div>
-				<div class="chart-wrap"><canvas id="topPagesChart"></canvas></div>
+		<!-- 熱門文章 -->
+		<section id="panelArticles" class="panel" style="display:none;">
+			<div class="card">
+				<h2>🔥 熱門文章 Top 100</h2>
+				<div id="topArticles"></div>
 			</div>
-			<div class="card" style="margin-bottom:0;">
-				<div class="map-wrap"><div id="map"></div></div>
-				<h3 style="margin:16px 0 4px; font-size:16px; color:#4a2e1b;">🌍 訪客地理分佈</h3>
-				<div class="geo-list" id="geoList"></div>
-			</div>
-		</div>
-	</div>
+		</section>
 
-	<div class="grid-3">
-		<div class="card" style="margin-bottom:0;">
-			<h2>🔥 熱門文章</h2>
-			<div id="topArticles"></div>
-		</div>
-		<div class="card" style="margin-bottom:0;">
-			<h2>📖 熱門彙典</h2>
-			<div id="topCompendium"></div>
-		</div>
-		<div class="card" style="margin-bottom:0;">
-			<h2>📑 最近事件</h2>
-			<div style="overflow-x:auto;"><table class="data" id="eventTable"><thead><tr><th>時間</th><th>事件</th><th>網址</th><th>停留</th><th>位置</th></tr></thead><tbody id="eventRows"><tr><td colspan="5">載入中...</td></tr></tbody></table></div>
-		</div>
-	</div>
+		<!-- 熱門彙典 -->
+		<section id="panelCompendium" class="panel" style="display:none;">
+			<div class="card">
+				<h2>📖 熱門彙典 Top 100</h2>
+				<div id="topCompendium"></div>
+			</div>
+		</section>
+
+		<!-- 最近事件 -->
+		<section id="panelRecent" class="panel" style="display:none;">
+			<div class="card">
+				<h2>📑 最近事件（最近 100 筆）</h2>
+				<div style="overflow-x:auto;"><table class="data" id="eventTable"><thead><tr><th>時間</th><th>事件</th><th>頁面</th><th>停留</th><th>位置</th><th>訪客</th></tr></thead><tbody id="eventRows"><tr><td colspan="6">載入中...</td></tr></tbody></table></div>
+			</div>
+		</section>
+
+		<!-- 訪客 -->
+		<section id="panelVisitors" class="panel" style="display:none;">
+			<div class="card">
+				<h2>👤 不重複訪客</h2>
+				<div class="stat" style="margin-bottom:16px;max-width:240px;">
+					<div class="value" id="uniqueVisitorsLarge">-</div>
+					<div class="label">不重複 session 數</div>
+				</div>
+				<div id="visitorGroups"></div>
+			</div>
+		</section>
+	</main>
 </div>
 
 <script type="module">
@@ -137,11 +156,8 @@
 	let chartTrend = null;
 	let chartPages = null;
 	let map = null;
-	let heatLayer = null;
 
-	document.getElementById('reloadBtn').onclick = loadAnalytics;
-	document.getElementById('rangeSelect').onchange = loadAnalytics;
-
+	// ---------- helpers ----------
 	async function fetchJson(url) {
 		try {
 			const r = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
@@ -160,6 +176,24 @@
 		return out;
 	}
 
+	function simplifyPage(url) {
+		const path = url.split('?')[0];
+		if (path === '/') return '首頁';
+		if (path.startsWith('/ghoststory/article/')) return '日誌文章';
+		if (path === '/ghoststory/' || path === '/ghoststory') return '日誌首頁';
+		if (path.startsWith('/services/compendium/detail.html')) return '彙典';
+		if (path.startsWith('/services/compendium')) return '彙典首頁';
+		if (path.startsWith('/services/notices')) return '公告';
+		if (path === '/services/' || path === '/services') return '服務首頁';
+		if (path.startsWith('/services/consult')) return '諮詢表單';
+		return path;
+	}
+
+	function shortSessionId(sid) {
+		if (!sid) return '-';
+		return sid.split('_')[0].slice(-6);
+	}
+
 	async function loadAnalytics() {
 		const days = Number($('rangeSelect').value) || 7;
 		const sb = await getSupabase();
@@ -175,10 +209,11 @@
 			if (eventsRes.error) throw eventsRes.error;
 			refreshUI(eventsRes.data || [], posts || [], services || [], days);
 		} catch (e) {
-			$('eventRows').innerHTML = `<tr><td colspan="5">讀取失敗：${esc(e.message || String(e))}</td></tr>`;
+			$('eventRows').innerHTML = `<tr><td colspan="6">讀取失敗：${esc(e.message || String(e))}</td></tr>`;
 		}
 	}
 
+	// ---------- refresh UI ----------
 	function refreshUI(items, postsArr, servicesArr, days) {
 		const postsMap = new Map();
 		(postsArr || []).forEach(p => { if (p.PostID != null) postsMap.set(String(p.PostID), p); });
@@ -192,89 +227,56 @@
 		const totalStay = stays.reduce((a, b) => a + b, 0);
 		const avg = stays.length ? Math.round(totalStay / stays.length) : 0;
 		const today = items.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length;
-		const pageCount = {};
-		const cityCount = {};
-		const articleCount = {};
-		const compendiumCount = {};
 
-		items.forEach(i => {
-			const p = i.page_url || '/';
-			pageCount[p] = (pageCount[p] || 0) + 1;
-
-			// article id?
-			const q = parseQuery(p);
-			const pid = q.id || '';
-			if (p.startsWith('/ghoststory/article/') && pid) {
-				articleCount[pid] = (articleCount[pid] || 0) + 1;
-			} else if (p.startsWith('/services/compendium/detail.html') && pid) {
-				compendiumCount[pid] = (compendiumCount[pid] || 0) + 1;
-			}
-
-			const city = (i.city || i.country_name || '').trim();
-			if (city) cityCount[city] = (cityCount[city] || 0) + 1;
-		});
-
-		const top = Object.entries(pageCount).sort((a, b) => b[1] - a[1])[0];
-		const topCityEntry = Object.entries(cityCount).sort((a, b) => b[1] - a[1])[0];
 		$('totalViews').innerText = total;
-		$('uniqueVisitors').innerText = uniqueSessions || '-';
+		$('uniqueVisitors').innerText = uniqueSessions;
 		$('uniquePages').innerText = uniquePages;
 		$('totalStay').innerText = totalStay + 's';
 		$('avgStay').innerText = avg + 's';
 		$('todayViews').innerText = today;
-		$('topPage').innerText = top ? top[0] : '-';
-		$('topCity').innerText = topCityEntry ? topCityEntry[0] : '-';
+		$('uniqueVisitorsLarge').innerText = uniqueSessions;
 
-		// Geo list
+		// map page_url counts for chart
+		const pageCount = {};
+		items.forEach(i => {
+			const p = i.page_url || '/';
+			pageCount[p] = (pageCount[p] || 0) + 1;
+		});
+
+		// map city counts for geo list
+		const cityCount = {};
+		items.forEach(i => {
+			const c = (i.city || i.country_name || '').trim();
+			if (c) cityCount[c] = (cityCount[c] || 0) + 1;
+		});
 		const geoList = Object.entries(cityCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
 		$('geoList').innerHTML = geoList.map(([name, count]) => `<span class="geo-pill">${esc(name)} · ${count}</span>`).join('') || '<span style="color:#8b7355;">尚無地理資料</span>';
+		const topCity = Object.entries(cityCount).sort((a, b) => b[1] - a[1])[0];
+		$('topCity').innerText = topCity ? topCity[0] : '-';
 
-		// Rank articles
-		const articleRank = Object.entries(articleCount)
-			.sort((a, b) => b[1] - a[1])
-			.slice(0, 8)
-			.map(([id, count]) => {
-				const pid = String(id).split('_')[0];
-				const p = postsMap.get(pid) || {};
-				const title = p['標題'] || `PostID ${pid}`;
-				const url = `/ghoststory/article/?id=${encodeURIComponent(id)}`;
-				const excerpt = (p['貼文內容'] || '').replace(/<[^>]*>/g, ' ').slice(0, 120).trim();
-				return { id, pid, title, url, excerpt, count };
-			});
-		$('topArticles').innerHTML = articleRank.length ? articleRank.map((r, i) => `
-			<li class="rank-item">
-				<div class="rank-num">${i + 1}</div>
-				<div class="rank-body">
-					<div class="rank-title">${esc(r.title)}</div>
-					${r.excerpt ? `<div class="rank-desc">${esc(r.excerpt)}</div>` : ''}
-					<div class="rank-meta">瀏覽 ${r.count} 次 · <a href="${esc(r.url)}" target="_blank" rel="noopener">查看文章</a></div>
-				</div>
-			</li>
-		`).join('') : '<div style="color:#8b7355;">尚無文章資料</div>';
+		// --- Top pages chart ---
+		const sorted = Object.entries(pageCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+		const ctx2 = $('topPagesChart').getContext('2d');
+		if (chartPages) chartPages.destroy();
+		chartPages = new Chart(ctx2, {
+			type: 'bar',
+			data: {
+				labels: sorted.map(([p]) => simplifyPage(p)),
+				datasets: [{
+					label: '瀏覽次數',
+					data: sorted.map(([_, c]) => c),
+					backgroundColor: '#8b7355'
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: { legend: { display: false } },
+				scales: { y: { beginAtZero: true } }
+			}
+		});
 
-		// Rank compendium
-		const compendiumRank = Object.entries(compendiumCount)
-			.sort((a, b) => b[1] - a[1])
-			.slice(0, 8)
-			.map(([id, count]) => {
-				const s = servicesMap.get(String(id)) || {};
-				const title = s['標題'] || `ID ${id}`;
-				const url = `/services/compendium/detail.html?id=${encodeURIComponent(id)}`;
-				const excerpt = (s['貼文內容'] || '').replace(/<[^>]*>/g, ' ').slice(0, 120).trim();
-				return { id, title, url, excerpt, count };
-			});
-		$('topCompendium').innerHTML = compendiumRank.length ? compendiumRank.map((r, i) => `
-			<li class="rank-item">
-				<div class="rank-num">${i + 1}</div>
-				<div class="rank-body">
-					<div class="rank-title">${esc(r.title)}</div>
-					${r.excerpt ? `<div class="rank-desc">${esc(r.excerpt)}</div>` : ''}
-					<div class="rank-meta">瀏覽 ${r.count} 次 · <a href="${esc(r.url)}" target="_blank" rel="noopener">查看彙典</a></div>
-				</div>
-			</li>
-		`).join('') : '<div style="color:#8b7355;">尚無彙典資料</div>';
-
-		// Trend chart
+		// --- Trend chart ---
 		const dayMap = {};
 		for (let i = days - 1; i >= 0; i--) {
 			const d = new Date();
@@ -282,8 +284,8 @@
 			dayMap[d.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })] = 0;
 		}
 		items.forEach(i => {
-			const d = new Date(i.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
-			if (dayMap[d] !== undefined) dayMap[d]++;
+			const dStr = new Date(i.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
+			if (dayMap[dStr] !== undefined) dayMap[dStr]++;
 		});
 		const ctx = $('trendChart').getContext('2d');
 		if (chartTrend) chartTrend.destroy();
@@ -303,58 +305,142 @@
 			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
 		});
 
-		// Top pages chart
-		const sorted = Object.entries(pageCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
-		const ctx2 = $('topPagesChart').getContext('2d');
-		if (chartPages) chartPages.destroy();
-		chartPages = new Chart(ctx2, {
-			type: 'bar',
-			data: {
-				labels: sorted.map(([p]) => p),
-				datasets: [{
-					label: '瀏覽次數',
-					data: sorted.map(([_, c]) => c),
-					backgroundColor: '#8b7355'
-				}]
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: false,
-				plugins: { legend: { display: false } },
-				scales: { y: { beginAtZero: true } }
+		// --- Heatmap ---
+		const points = items
+			.filter(i => i.latitude != null && i.longitude != null)
+			.map(i => [Number(i.latitude), Number(i.longitude), Math.max(1, i.stay_time_seconds || 1)]);
+		if (map) { map.remove(); map = null; }
+		if (points.length > 0) {
+			map = L.map('map', { zoomControl: false }).setView([23.5, 121], 4);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+			L.heatLayer(points, { radius: 35, blur: 25, maxZoom: 12 }).addTo(map);
+			map.fitBounds(L.latLngBounds(points.map(p => [p[0], p[1]])).pad(0.2));
+		}
+
+		// --- Top articles & compendium (Top 100) ---
+		const articleCount = {};
+		const compendiumCount = {};
+		items.forEach(i => {
+			const p = i.page_url || '/';
+			const q = parseQuery(p);
+			const pid = q.id || '';
+			if (p.startsWith('/ghoststory/article/') && pid) {
+				articleCount[pid] = (articleCount[pid] || 0) + 1;
+			} else if (p.startsWith('/services/compendium/detail.html') && pid) {
+				compendiumCount[pid] = (compendiumCount[pid] || 0) + 1;
 			}
 		});
 
-		renderHeatmap(items);
+		const articleRank = Object.entries(articleCount)
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 100)
+			.map(([id, count]) => {
+				const pid = String(id).split('_')[0];
+				const p = postsMap.get(pid) || {};
+				const title = p['標題'] || `PostID ${pid}`;
+				const url = `/ghoststory/article/?id=${encodeURIComponent(id)}`;
+				const excerpt = (p['貼文內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').slice(0, 80).trim();
+				return { id, title, url, excerpt, count };
+			});
+		$('topArticles').innerHTML = articleRank.length ? '<ol class="rank-list">' + articleRank.map((r, i) => `
+			<li class="rank-item">
+				<div class="rank-num">${i + 1}</div>
+				<div class="rank-body">
+					<div class="rank-title">${esc(r.title)}</div>
+					${r.excerpt ? `<div class="rank-desc">${esc(r.excerpt)}</div>` : ''}
+					<div class="rank-meta">瀏覽 ${r.count} 次 · <a href="${esc(r.url)}" target="_blank" rel="noopener">查看文章</a></div>
+				</div>
+			</li>
+		`).join('') : '<div style="color:#8b7355;">尚無文章資料</div>';
 
+		const compendiumRank = Object.entries(compendiumCount)
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 100)
+			.map(([id, count]) => {
+				const s = servicesMap.get(String(id)) || {};
+				const title = s['標題'] || `ID ${id}`;
+				const url = `/services/compendium/detail.html?id=${encodeURIComponent(id)}`;
+				const excerpt = (s['貼文內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').slice(0, 80).trim();
+				return { id, title, url, excerpt, count };
+			});
+		$('topCompendium').innerHTML = compendiumRank.length ? '<ol class="rank-list">' + compendiumRank.map((r, i) => `
+			<li class="rank-item">
+				<div class="rank-num">${i + 1}</div>
+				<div class="rank-body">
+					<div class="rank-title">${esc(r.title)}</div>
+					${r.excerpt ? `<div class="rank-desc">${esc(r.excerpt)}</div>` : ''}
+					<div class="rank-meta">瀏覽 ${r.count} 次 · <a href="${esc(r.url)}" target="_blank" rel="noopener">查看彙典</a></div>
+				</div>
+			</li>
+		`).join('') : '<div style="color:#8b7355;">尚無彙典資料</div>';
+
+		// --- Recent events ---
 		const recent = [...items].slice(-100).reverse();
 		$('eventRows').innerHTML = recent.map(i => {
 			const t = new Date(i.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
 			const pos = [i.city, i.region, i.country_name].filter(Boolean).join(' · ');
-			return `<tr><td>${esc(t)}</td><td>${esc(i.event_name || '-')}</td><td>${esc(i.page_url || '-')}</td><td>${i.stay_time_seconds != null ? esc(i.stay_time_seconds + 's') : '-'}</td><td>${esc(pos || '-')}</td></tr>`;
-		}).join('') || '<tr><td colspan="5">（空）</td></tr>';
+			const session = shortSessionId(i.session_id);
+			const pageName = simplifyPage(i.page_url || '/');
+			return `<tr><td>${esc(t)}</td><td>${esc(i.event_name || '-')}</td><td>${esc(pageName)}</td><td>${i.stay_time_seconds != null ? esc(i.stay_time_seconds + 's') : '-'}</td><td>${esc(pos || '-')}</td><td><span class="path-tag">${esc(session)}</span></td></tr>`;
+		}).join('') || '<tr><td colspan="6">（空）</td></tr>';
+
+		// --- Visitors panel: group by session_id ---
+		const sessionMap = {};
+		items.forEach(i => {
+			const sid = i.session_id || 'unknown';
+			if (!sessionMap[sid]) sessionMap[sid] = [];
+			sessionMap[sid].push(i);
+		});
+		const sessions = Object.entries(sessionMap).sort((a, b) => b[1][0].created_at.localeCompare(a[1][0].created_at));
+		const visitorHtml = sessions.map(([sid, events]) => {
+			const totalStayTime = events.reduce((s, e) => s + (e.stay_time_seconds || 0), 0);
+			const latest = events[events.length - 1] || events[0];
+			const latestStr = latest ? new Date(latest.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '';
+			const pages = [...new Set(events.map(e => simplifyPage(e.page_url || '/')))].join(', ');
+			const city = (latest?.city || latest?.country_name || '').trim();
+			const eventsHtml = events.slice().reverse().map(e => {
+				const et = new Date(e.created_at).toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit' });
+				const ep = simplifyPage(e.page_url || '/');
+				const dur = e.stay_time_seconds != null ? e.stay_time_seconds + 's' : '-';
+				return `<div class="visitor-event"><span style="color:#8b7355;">${esc(et)}</span><span class="path-tag">${esc(e.event_name)}</span><span>${esc(ep)}</span><span style="color:#5c4332;">${dur}</span></div>`;
+			}).join('');
+			return `
+				<div class="visitor-group">
+					<div class="visitor-header" data-sid="${esc(sid)}">
+						<span style="color:#8b7355;">#${esc(shortSessionId(sid))}</span>
+						<span style="flex:1;color:#4a2e1b;">${esc(city || '未知城市')} · ${esc(pages)}</span>
+						<span style="font-size:12px;color:#5c4332;">${events.length} 次 · ${totalStayTime}s · ${esc(latestStr)}</span>
+						<span class="toggle-arrow">▶</span>
+					</div>
+					<div class="visitor-body" id="vb-${esc(sid)}">${eventsHtml}</div>
+				</div>
+			`;
+		}).join('');
+		$('visitorGroups').innerHTML = visitorHtml || '<div style="color:#8b7355;">尚無訪客資料</div>';
+
+		// toggle visitor accordion
+		$('visitorGroups').querySelectorAll('.visitor-header').forEach(header => {
+			header.addEventListener('click', () => {
+				const sid = header.dataset.sid;
+				const body = document.getElementById('vb-' + sid);
+				if (body) body.classList.toggle('open');
+				const arrow = header.querySelector('.toggle-arrow');
+				if (arrow) arrow.textContent = body && body.classList.contains('open') ? '▼' : '▶';
+			});
+		});
 	}
 
-	function renderHeatmap(items) {
-		const points = items
-			.filter(i => i.latitude != null && i.longitude != null)
-			.map(i => [Number(i.latitude), Number(i.longitude), Math.max(1, i.stay_time_seconds || 1)]);
-
-		if (map) {
-			map.remove();
-			map = null;
-		}
-		if (points.length === 0) return;
-
-		map = L.map('map', { zoomControl: false }).setView([23.5, 121], 4);
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 18,
-			attribution: '&copy; OpenStreetMap contributors'
-		}).addTo(map);
-
-		heatLayer = L.heatLayer(points, { radius: 35, blur: 25, maxZoom: 12 }).addTo(map);
-		map.fitBounds(L.latLngBounds(points.map(p => [p[0], p[1]])).pad(0.2));
-	}
+	// Sidebar tabs
+	document.querySelectorAll('.sidebar-btn').forEach(btn => {
+		btn.addEventListener('click', () => {
+			const panelId = btn.dataset.panel;
+			document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.toggle('active', b === btn));
+			document.querySelectorAll('.panel').forEach(panel => {
+				panel.classList.toggle('active', panel.id === panelId);
+				panel.style.display = panel.id === panelId ? 'block' : 'none';
+			});
+		});
+	});
 
 	async function init() {
 		try {
