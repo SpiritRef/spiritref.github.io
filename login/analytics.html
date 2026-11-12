@@ -13,12 +13,19 @@
 	<link rel="stylesheet" href="https://spiritref.github.io/CSS/global.css">
 	<style>
 		body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f8f9fa; padding: 0; margin: 0; color: #3e2723; }
-		.analytics-layout { display: block; }
-		.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 170px; overflow-y: auto; z-index: 50; }
+		.analytics-layout { position: relative; min-height: 100vh; }
+		.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 170px; overflow-y: auto; z-index: 50; transition: transform 0.3s ease; }
 		.main-content { margin-left: 170px; padding: 24px; overflow-x: auto; min-height: 100vh; }
+		.menu-toggle { display: none; position: fixed; top: 14px; left: 14px; z-index: 70; width: 44px; height: 44px; border: none; border-radius: 8px; background: rgba(255,255,255,0.95); color: #4a2e1b; box-shadow: 0 2px 8px rgba(0,0,0,0.25); cursor: pointer; font-size: 22px; line-height:1; align-items: center; justify-content: center; }
+		.menu-toggle:hover { background: #fff; }
+		#menuOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
 
 		@media (max-width: 900px) {
-			.grid-2 { grid-template-columns: 1fr; }
+			.sidebar { width: 240px; transform: translateX(-100%); box-shadow: 4px 0 12px rgba(0,0,0,0.15); }
+			.main-content { margin-left: 0; padding: 24px; }
+			.menu-toggle { display: flex; }
+			.analytics-layout.menu-open .sidebar { transform: translateX(0); }
+			.analytics-layout.menu-open #menuOverlay { display: block; }
 		}
 		.sidebar { background: linear-gradient(180deg, #f7ebd7 0%, #e6d3af 100%); border-right: 1px solid #dcbfa2; padding: 20px 10px; display:flex; flex-direction:column; gap:8px; }
 		.sidebar h1 { font-size: 16px; color: #4a2e1b; margin: 0 0 10px 4px; }
@@ -74,6 +81,9 @@
 	</style>
 </head>
 <body>
+<button id="menuToggle" class="menu-toggle" aria-label="切換選單">☰</button>
+<div id="menuOverlay"></div>
+
 <div class="analytics-layout">
 	<!-- 左側選單 -->
 	<aside class="sidebar">
@@ -473,9 +483,21 @@
 		});
 	}
 
-	// Sidebar tabs
+	// Hamburger toggle
+	const layout = document.querySelector('.analytics-layout');
+	const menuToggle = document.getElementById('menuToggle');
+	const menuOverlay = document.getElementById('menuOverlay');
+	if (menuToggle && layout) {
+		menuToggle.addEventListener('click', () => layout.classList.toggle('menu-open'));
+	}
+	if (menuOverlay && layout) {
+		menuOverlay.addEventListener('click', () => layout.classList.remove('menu-open'));
+	}
+
+	// Sidebar tabs（點任一個 panel 都關閉選單）
 	document.querySelectorAll('.sidebar-btn').forEach(btn => {
 		btn.addEventListener('click', () => {
+			if (layout) layout.classList.remove('menu-open');
 			const panelId = btn.dataset.panel;
 			document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.toggle('active', b === btn));
 			document.querySelectorAll('.panel').forEach(panel => {
