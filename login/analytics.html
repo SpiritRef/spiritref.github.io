@@ -4,6 +4,9 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="robots" content="noindex,nofollow">
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="0">
 	<title>分析儀表板 | 鬼磕頭</title>
 	<link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -22,7 +25,7 @@
 
 		@media (max-width: 900px) {
 			.sidebar { width: 240px; transform: translateX(-100%); box-shadow: 4px 0 12px rgba(0,0,0,0.15); }
-			.main-content { margin-left: 0; padding: 24px; }
+			.main-content { margin-left: 0; padding: 64px 16px 24px; }
 			.menu-toggle { display: flex; }
 			.analytics-layout.menu-open .sidebar { transform: translateX(0); }
 			.analytics-layout.menu-open #menuOverlay { display: block; }
@@ -41,7 +44,7 @@
 		.stat .value { font-size: 1.8em; font-weight: 900; color: #8b7355; }
 		.stat .label { font-size: 11px; color: #5c4332; margin-top: 2px; }
 		.chart-wrap { background: rgba(255,255,255,0.8); border: 1px solid #dcbfa2; border-radius: 10px; padding: 14px; position:relative; height:300px; margin-bottom:18px; }
-		.map-wrap { height: 360px; border-radius: 10px; overflow: hidden; border: 1px solid #dcbfa2; }
+		.map-wrap { position: relative; z-index: 0; height: 360px; border-radius: 10px; overflow: hidden; border: 1px solid #dcbfa2; }
 		#map { width: 100%; height: 100%; }
 		.grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
 
