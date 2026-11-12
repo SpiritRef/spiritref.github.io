@@ -160,6 +160,31 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl) {
 			stay_time_seconds: stayTime,
 			page_url: pageUrl || window.location.pathname
 		};
+
+		// 地理座標：每個瀏覽器分頁只抓一次
+		const geoCache = sessionStorage.getItem('user_geo_cache');
+		if (geoCache) {
+			try {
+				const g = JSON.parse(geoCache);
+				payload.city = g.city || null;
+				payload.region = g.region || null;
+				payload.country_name = g.country_name || null;
+				payload.latitude = g.latitude || null;
+				payload.longitude = g.longitude || null;
+			} catch (e) {}
+		} else {
+			try {
+				const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+				const g = await r.json().catch(() => ({}));
+				sessionStorage.setItem('user_geo_cache', JSON.stringify(g));
+				payload.city = g.city || null;
+				payload.region = g.region || null;
+				payload.country_name = g.country_name || null;
+				payload.latitude = g.latitude || null;
+				payload.longitude = g.longitude || null;
+			} catch (e) { console.warn('IP 服務讀取失敗:', e); }
+		}
+
 		const { error } = await sb.from('user_events').insert([payload]);
 		if (error) console.warn('Analytics 寫入失敗:', error);
 	} catch (e) {

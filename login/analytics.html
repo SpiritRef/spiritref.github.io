@@ -6,24 +6,33 @@
 	<meta name="robots" content="noindex,nofollow">
 	<title>分析儀表板 | 鬼磕頭</title>
 	<link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 	<link rel="stylesheet" href="https://spiritref.github.io/CSS/global.css">
 	<style>
 		body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f8f9fa; padding: 20px; margin: 0; color: #3e2723; }
 		.card { background: linear-gradient(135deg, #f7ebd7 0%, #e6d3af 100%); border: 1px solid #dcbfa2; border-left: 5px solid #8b7355; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 		h2 { color: #4a2e1b; margin-top: 0; display:flex; align-items:center; gap:10px; }
-		.stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin: 10px 0 20px; }
+		.stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin: 10px 0 20px; }
 		.stat { background: rgba(255,255,255,0.7); border: 1px solid #dcbfa2; border-radius: 10px; padding: 15px; text-align:center; }
 		.stat .value { font-size: 2em; font-weight: 900; color: #8b7355; }
 		.stat .label { font-size: 13px; color: #5c4332; margin-top: 4px; }
 		.charts { display:grid; grid-template-columns: 1fr; gap: 20px; }
 		.chart-wrap { background: rgba(255,255,255,0.7); border: 1px solid #dcbfa2; border-radius: 10px; padding: 15px; position:relative; height:320px; }
+		.map-wrap { height: 420px; border-radius: 10px; overflow: hidden; border: 1px solid #dcbfa2; }
+		#map { width: 100%; height: 100%; }
+		.geo-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+		.geo-pill { background: rgba(255,255,255,0.8); border:1px solid #dcbfa2; padding:6px 12px; border-radius:20px; font-size:13px; }
 		table.data { width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
 		table.data th, table.data td { border-bottom:1px solid #eee; padding:8px; text-align:left; vertical-align:top; }
 		table.data th { background:#faf6f0; color:#4a2e1b; }
 		.toolbar { display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap; align-items:center; }
 		.toolbar select, .toolbar button { padding:8px 14px; border:1px solid #dcbfa2; border-radius:6px; cursor:pointer; font-family:inherit; color:#4a2e1b; background:#fff; font-weight:bold; }
 		.toolbar button:hover { border-color:#8b7355; }
+		.grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
+		@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
 	</style>
 </head>
 <body>
@@ -49,6 +58,10 @@
 				<div class="label">總瀏覽量</div>
 			</div>
 			<div class="stat">
+				<div class="value" id="uniquePages">-</div>
+				<div class="label">不重複頁面</div>
+			</div>
+			<div class="stat">
 				<div class="value" id="avgStay">-</div>
 				<div class="label">平均停留（秒）</div>
 			</div>
@@ -60,28 +73,41 @@
 				<div class="value" id="topPage">-</div>
 				<div class="label">最熱門頁面</div>
 			</div>
+			<div class="stat">
+				<div class="value" id="topCity">-</div>
+				<div class="label">最多訪客城市</div>
+			</div>
 		</div>
 
-		<div class="charts">
-			<div class="chart-wrap"><canvas id="trendChart"></canvas></div>
-			<div class="chart-wrap"><canvas id="topPagesChart"></canvas></div>
+		<div class="grid-2">
+			<div class="charts">
+				<div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+				<div class="chart-wrap"><canvas id="topPagesChart"></canvas></div>
+			</div>
+			<div class="card" style="margin-bottom:0;">
+				<div class="map-wrap"><div id="map"></div></div>
+				<h3 style="margin:16px 0 4px; font-size:16px; color:#4a2e1b;">🌍 訪客地理分佈</h3>
+				<div class="geo-list" id="geoList"></div>
+			</div>
 		</div>
 	</div>
 
 	<div class="card">
 		<h2>📑 最近事件</h2>
-		<div id="eventList" style="overflow-x:auto;"><table class="data" id="eventTable"><thead><tr><th>時間</th><th>事件</th><th>網址</th><th>停留</th></tr></thead><tbody id="eventRows"><tr><td colspan="4">載入中...</td></tr></tbody></table></div>
+		<div style="overflow-x:auto;"><table class="data" id="eventTable"><thead><tr><th>時間</th><th>事件</th><th>網址</th><th>停留</th><th>位置</th></tr></thead><tbody id="eventRows"><tr><td colspan="5">載入中...</td></tr></tbody></table></div>
 	</div>
 </div>
 
 <script type="module">
-	import { requireAdmin, logoutAndGo, onAuthChange, getSupabase } from './Javascript/adminAuth.js?v=20261212';
+	import { requireAdmin, getSupabase, onAuthChange } from './Javascript/adminAuth.js?v=20261212';
 
 	const $ = (id) => document.getElementById(id);
 	const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 	let chartTrend = null;
 	let chartPages = null;
+	let map = null;
+	let heatLayer = null;
 
 	document.getElementById('reloadBtn').onclick = loadAnalytics;
 	document.getElementById('rangeSelect').onchange = loadAnalytics;
@@ -100,25 +126,36 @@
 			if (error) throw error;
 			refreshUI(data || [], days);
 		} catch (e) {
-			document.getElementById('eventRows').innerHTML = `<tr><td colspan="4">讀取失敗：${esc(e.message || String(e))}</td></tr>`;
+			$('eventRows').innerHTML = `<tr><td colspan="5">讀取失敗：${esc(e.message || String(e))}</td></tr>`;
 		}
 	}
 
 	function refreshUI(items, days) {
 		const total = items.length;
+		const uniquePages = new Set(items.map(i => i.page_url || '/')).size;
 		const stays = items.filter(i => i.stay_time_seconds != null).map(i => i.stay_time_seconds);
 		const avg = stays.length ? Math.round(stays.reduce((a, b) => a + b, 0) / stays.length) : 0;
 		const today = items.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length;
 		const pageCount = {};
+		const cityCount = {};
 		items.forEach(i => {
 			const p = i.page_url || '/';
 			pageCount[p] = (pageCount[p] || 0) + 1;
+			const city = i.city || i.country_name || '';
+			if (city) cityCount[city] = (cityCount[city] || 0) + 1;
 		});
 		const top = Object.entries(pageCount).sort((a, b) => b[1] - a[1])[0];
-		document.getElementById('totalViews').innerText = total;
-		document.getElementById('avgStay').innerText = avg;
-		document.getElementById('todayViews').innerText = today;
-		document.getElementById('topPage').innerText = top ? top[0] : '-';
+		const topCityEntry = Object.entries(cityCount).sort((a, b) => b[1] - a[1])[0];
+		$('totalViews').innerText = total;
+		$('uniquePages').innerText = uniquePages;
+		$('avgStay').innerText = avg;
+		$('todayViews').innerText = today;
+		$('topPage').innerText = top ? top[0] : '-';
+		$('topCity').innerText = topCityEntry ? topCityEntry[0] : '-';
+
+		// Geo list
+		const geoList = Object.entries(cityCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+		$('geoList').innerHTML = geoList.map(([name, count]) => `<span class="geo-pill">${esc(name)} · ${count}</span>`).join('') || '<span style="color:#8b7355;">尚無地理資料</span>';
 
 		// Trend chart
 		const dayMap = {};
@@ -131,7 +168,7 @@
 			const d = new Date(i.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
 			if (dayMap[d] !== undefined) dayMap[d]++;
 		});
-		const ctx = document.getElementById('trendChart').getContext('2d');
+		const ctx = $('trendChart').getContext('2d');
 		if (chartTrend) chartTrend.destroy();
 		chartTrend = new Chart(ctx, {
 			type: 'line',
@@ -151,7 +188,7 @@
 
 		// Top pages chart
 		const sorted = Object.entries(pageCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
-		const ctx2 = document.getElementById('topPagesChart').getContext('2d');
+		const ctx2 = $('topPagesChart').getContext('2d');
 		if (chartPages) chartPages.destroy();
 		chartPages = new Chart(ctx2, {
 			type: 'bar',
@@ -171,25 +208,50 @@
 			}
 		});
 
+		// Heatmap
+		renderHeatmap(items);
+
 		// Recent events
 		const recent = [...items].slice(-100).reverse();
-		document.getElementById('eventRows').innerHTML = recent.map(i => {
+		$('eventRows').innerHTML = recent.map(i => {
 			const t = new Date(i.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-			return `<tr><td>${esc(t)}</td><td>${esc(i.event_name || '-')}</td><td>${esc(i.page_url || '-')}</td><td>${i.stay_time_seconds != null ? esc(i.stay_time_seconds + 's') : '-'}</td></tr>`;
-		}).join('') || '<tr><td colspan="4">（空）</td></tr>';
+			const pos = [i.city, i.region, i.country_name].filter(Boolean).join(' · ');
+			return `<tr><td>${esc(t)}</td><td>${esc(i.event_name || '-')}</td><td>${esc(i.page_url || '-')}</td><td>${i.stay_time_seconds != null ? esc(i.stay_time_seconds + 's') : '-'}</td><td>${esc(pos || '-')}</td></tr>`;
+		}).join('') || '<tr><td colspan="5">（空）</td></tr>';
 	}
 
-	async function loadAnalyticsFromSession() {
+	function renderHeatmap(items) {
+		const points = items
+			.filter(i => i.latitude != null && i.longitude != null)
+			.map(i => [Number(i.latitude), Number(i.longitude), Math.max(1, i.stay_time_seconds || 1)]);
+
+		if (map) {
+			map.remove();
+			map = null;
+		}
+		if (points.length === 0) return;
+
+		map = L.map('map', { zoomControl: false }).setView([23.5, 121], 4);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 18,
+			attribution: '&copy; OpenStreetMap contributors'
+		}).addTo(map);
+
+		heatLayer = L.heatLayer(points, { radius: 35, blur: 25, maxZoom: 12 }).addTo(map);
+		map.fitBounds(L.latLngBounds(points.map(p => [p[0], p[1]])).pad(0.2));
+	}
+
+	async function init() {
 		try {
 			const session = await requireAdmin('./');
 			if (!session) return;
-			document.getElementById('adminUser').innerText = '已登入：' + (session.user?.email || '');
+			$('adminUser').innerText = '已登入：' + (session.user?.email || '');
 			await loadAnalytics();
 		} catch (e) {
-			document.getElementById('adminUser').innerText = '驗證失敗：' + (e?.message || e);
+			$('adminUser').innerText = '驗證失敗：' + (e?.message || e);
 		}
 	}
-	loadAnalyticsFromSession();
+	init();
 	onAuthChange((_event, s) => { if (!s) location.replace('./'); });
 </script>
 </body>
