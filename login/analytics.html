@@ -13,56 +13,51 @@
 	<link rel="stylesheet" href="https://spiritref.github.io/CSS/global.css">
 	<style>
 		body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f8f9fa; padding: 0; margin: 0; color: #3e2723; }
-		.analytics-layout { display: grid; grid-template-columns: 180px 1fr; min-height: 100vh; }
+		.analytics-layout { display: grid; grid-template-columns: 170px 1fr; min-height: 100vh; }
+		.main-content { padding: 24px; overflow-x: auto; }
 
-		@media (max-width: 900px) {
-			.analytics-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-			.sidebar { order: 2; border-right: none; border-left: none; border-top: 1px solid #dcbfa2; padding: 12px 10px; display: flex; flex-wrap: wrap; gap: 8px; }
-			.sidebar h1 { width: 100%; margin: 0 0 8px 4px; }
-			.sidebar-btn { width: auto; margin-bottom: 0; }
-			.sidebar > div[style*="margin-top:auto"] { width: 100%; border-top: 1px solid #dcbfa2; padding-top: 10px; }
-		}
 		@media (max-width: 700px) {
-			.main-content { padding: 16px; }
-			.chart-wrap { height: 240px; }
-			.map-wrap { height: 260px; }
-			.stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+			.analytics-layout { grid-template-columns: 64px 1fr; }
+			.sidebar { padding: 8px 4px; align-items: center; }
+			.sidebar h1 { display: none; }
+			.sidebar-btn { font-size: 11px; padding: 8px 2px; text-align: center; line-height: 1.2; }
+			.back-admin .sidebar-btn { font-size: 11px; }
+			.main-content { padding: 16px 12px; }
+			.card { padding: 12px; margin-bottom: 12px; overflow: hidden; }
+			h2 { font-size: 15px; margin-bottom: 8px; }
+			h3 { font-size: 13px; margin-bottom: 4px; }
+			.unit { margin-bottom: 8px; }
+			.stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+			.stat { padding: 10px 8px; }
 			.stat .value { font-size: 1.4em; }
-			.value { font-size: 1.4em; }
-			.rank-item { flex-direction: column; gap: 6px; }
+			.chart-wrap { height: 220px; padding: 10px; margin-bottom: 12px; }
+			.map-wrap { height: 220px; }
+			.toolbar { gap: 6px; flex-wrap: wrap; }
+			.toolbar select, .toolbar button { padding: 5px 8px; font-size: 13px; }
+			.rank-item { flex-direction: column; gap: 4px; align-items: flex-start; }
 			.rank-num { width: 24px; height: 24px; font-size: 12px; }
-			.rank-desc { white-space: normal; }
-			.toolbar { gap: 8px; }
-			.toolbar select, .toolbar button { padding: 6px 10px; font-size: 14px; }
+			.rank-desc { white-space: normal; font-size: 11px; }
+			.rank-meta { font-size: 11px; }
 		}
-		.sidebar { background: linear-gradient(180deg, #f7ebd7 0%, #e6d3af 100%); border-right: 1px solid #dcbfa2; border-left: none; padding: 20px 10px; }
-		.sidebar h1 { font-size: 16px; color: #4a2e1b; margin: 0 0 16px 4px; }
-		.sidebar-btn { display: block; width: 100%; text-align: left; padding: 10px 12px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: bold; color: #5c4332; margin-bottom: 4px; transition: all 0.2s; }
+		.sidebar { background: linear-gradient(180deg, #f7ebd7 0%, #e6d3af 100%); border-right: 1px solid #dcbfa2; padding: 20px 10px; display:flex; flex-direction:column; gap:8px; }
+		.sidebar h1 { font-size: 16px; color: #4a2e1b; margin: 0 0 10px 4px; }
+		.sidebar-btn { display: block; width: 100%; text-align: left; padding: 10px 12px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: bold; color: #5c4332; margin-bottom: 2px; transition: all 0.2s; }
 		.sidebar-btn:hover { background: rgba(139, 115, 85, 0.1); }
 		.sidebar-btn.active { background: #8b7355; color: #fff; }
-		.main-content { padding: 24px; }
-		.card { background: rgba(255,255,255,0.7); border: 1px solid #dcbfa2; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-		h2 { color: #4a2e1b; margin-top: 0; font-size: 20px; }
-		.stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 20px; }
-		.stat { background: rgba(255,255,255,0.8); border: 1px solid #dcbfa2; border-radius: 10px; padding: 14px; text-align:center; }
+		.main-content { padding: 24px; overflow-x: hidden; }
+		.card { background: rgba(255,255,255,0.7); border: 1px solid #dcbfa2; border-radius: 12px; padding: 20px; margin-bottom: 20px; overflow: hidden; }
+		h2 { color: #4a2e1b; margin: 0 0 14px; font-size: 18px; }
+		h3 { color: #4a2e1b; margin: 0 0 6px; font-size: 15px; }
+		.unit { font-size: 12px; color: #8b7355; margin: -8px 0 12px; }
+		.stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 18px; }
+		.stat { background: rgba(255,255,255,0.85); border: 1px solid #dcbfa2; border-radius: 10px; padding: 14px; text-align:center; }
 		.stat .value { font-size: 1.8em; font-weight: 900; color: #8b7355; }
-		.stat .label { font-size: 12px; color: #5c4332; margin-top: 2px; }
-		.charts { display:grid; grid-template-columns: 1fr; gap: 18px; margin-bottom: 18px; }
-		.chart-wrap { background: rgba(255,255,255,0.8); border: 1px solid #dcbfa2; border-radius: 10px; padding: 15px; position:relative; height:300px; }
+		.stat .label { font-size: 11px; color: #5c4332; margin-top: 2px; }
+		.chart-wrap { background: rgba(255,255,255,0.8); border: 1px solid #dcbfa2; border-radius: 10px; padding: 14px; position:relative; height:300px; margin-bottom:18px; }
 		.map-wrap { height: 360px; border-radius: 10px; overflow: hidden; border: 1px solid #dcbfa2; }
 		#map { width: 100%; height: 100%; }
 		.grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
 		@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-		@media (max-width: 700px) {
-			.grid-2 { grid-template-columns: 1fr; gap: 12px; }
-			.card { padding: 14px; }
-			.chart-wrap { height: 220px; }
-			.stats { gap: 8px; margin-bottom: 12px; }
-			.stat { padding: 10px; }
-			.stat .value { font-size: 1.3em; }
-			.rank-title, .rank-meta, .rank-desc { word-break: break-word; }
-			.visitor-event { flex-wrap: wrap; gap: 4px; }
-		}
 
 		.rank-list { list-style:none; padding:0; }
 		.rank-item { background: rgba(255,255,255,0.8); border:1px solid #dcbfa2; border-radius:8px; padding:10px 12px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start; }
@@ -76,8 +71,9 @@
 		table.data { width:100%; border-collapse:collapse; font-size:14px; }
 		table.data th, table.data td { border-bottom:1px solid #eee; padding:8px; text-align:left; vertical-align:top; }
 		table.data th { background:#faf6f0; color:#4a2e1b; }
-		.toolbar { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
-		.toolbar select, .toolbar button { padding:8px 12px; border:1px solid #dcbfa2; border-radius:6px; cursor:pointer; font-family:inherit; color:#4a2e1b; background:#fff; font-weight:bold; }
+		.toolbar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+		.toolbar label { font-size:13px; color:#4a2e1b; }
+		.toolbar select, .toolbar button { padding:7px 12px; border:1px solid #dcbfa2; border-radius:6px; cursor:pointer; font-family:inherit; color:#4a2e1b; background:#fff; font-weight:bold; }
 		.toolbar button:hover { border-color:#8b7355; }
 		.visitor-group { border: 1px solid #dcbfa2; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
 		.visitor-header { background: #faf6f0; padding: 8px 12px; cursor: pointer; display:flex; align-items:center; gap:10px; font-weight:bold; color:#4a2e1b; user-select:none; }
@@ -87,21 +83,30 @@
 		.visitor-event { padding:4px 0; border-bottom:1px dashed #eee; display:flex; gap:10px; font-size:13px; }
 		.visitor-event:last-child { border-bottom:none; }
 		.path-tag { background:#8b7355; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; }
+		.geo-list { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+		.geo-pill { background: rgba(255,255,255,0.8); border:1px solid #dcbfa2; padding:4px 10px; border-radius:6px; font-size:12px; }
+		.map-footer { margin-top:12px; font-size:13px; color:#5c4332; }
+		.map-footer strong { color:#4a2e1b; }
+		.back-admin { margin-top:auto; padding-top:16px; border-top:1px solid #dcbfa2; }
+		.back-admin .sidebar-btn { color:#8b7355; }
+		.back-admin .sidebar-btn:hover { background: rgba(139, 115, 85, 0.1); }
+		.back-admin .logout { color:#b04a3a; }
+		.back-admin .logout:hover { background: rgba(176, 74, 58, 0.1); }
 	</style>
 </head>
 <body>
-
 <div class="analytics-layout">
 	<!-- 左側選單 -->
 	<aside class="sidebar">
-		<h1>📊 分析儀表板</h1>
+		<h1>📊 分析</h1>
 		<button class="sidebar-btn active" data-panel="panelOverview">🏠 總覽</button>
 		<button class="sidebar-btn" data-panel="panelArticles">🔥 熱門文章</button>
 		<button class="sidebar-btn" data-panel="panelCompendium">📖 熱門彙典</button>
 		<button class="sidebar-btn" data-panel="panelRecent">📑 最近事件</button>
 		<button class="sidebar-btn" data-panel="panelVisitors">👤 訪客</button>
-		<div style="margin-top:auto; padding-top:16px; border-top:1px solid #dcbfa2;">
-			<button id="logoutBtn" class="sidebar-btn" style="color:#b04a3a; font-weight:bold;">🚪 登出</button>
+		<div class="back-admin">
+			<button class="sidebar-btn" onclick="location.href='./admin.html'">↩ 回管理後台</button>
+			<button class="sidebar-btn logout" id="logoutBtn">🚪 登出</button>
 		</div>
 	</aside>
 
@@ -110,7 +115,7 @@
 		<div id="adminUser" style="font-size:12px;color:#8b7355;margin-bottom:12px;">驗證登入中...</div>
 
 		<div class="toolbar">
-			<label style="font-size:13px;color:#4a2e1b;">時間範圍：</label>
+			<label for="rangeSelect">時間範圍</label>
 			<select id="rangeSelect">
 				<option value="7">最近 7 天</option>
 				<option value="30">最近 30 天</option>
@@ -122,23 +127,31 @@
 		<!-- 總覽 -->
 		<section id="panelOverview" class="panel active">
 			<div class="stats">
-				<div class="stat"><div class="value" id="totalViews">-</div><div class="label">總瀏覽量</div></div>
-				<div class="stat"><div class="value" id="uniqueVisitors">-</div><div class="label">不重複訪客</div></div>
-				<div class="stat"><div class="value" id="uniquePages">-</div><div class="label">不重複頁面</div></div>
-				<div class="stat"><div class="value" id="totalStay">-</div><div class="label">總停留秒數</div></div>
+				<div class="stat"><div class="value" id="totalViews">-</div><div class="label">總瀏覽量（次）</div></div>
+				<div class="stat"><div class="value" id="uniqueVisitors">-</div><div class="label">不重複訪客（人）</div></div>
+				<div class="stat"><div class="value" id="uniquePages">-</div><div class="label">不重複頁面（頁）</div></div>
+				<div class="stat"><div class="value" id="totalStay">-</div><div class="label">總停留秒數（秒）</div></div>
 				<div class="stat"><div class="value" id="avgStay">-</div><div class="label">平均停留（秒）</div></div>
-				<div class="stat"><div class="value" id="todayViews">-</div><div class="label">今日瀏覽</div></div>
-				<div class="stat"><div class="value" id="topCity">-</div><div class="label">最多訪客城市</div></div>
+				<div class="stat"><div class="value" id="todayViews">-</div><div class="label">今日瀏覽（次）</div></div>
 			</div>
 			<div class="grid-2">
 				<div class="charts">
-					<div class="chart-wrap"><canvas id="trendChart"></canvas></div>
-					<div class="chart-wrap"><canvas id="topPagesChart"></canvas></div>
+					<div>
+						<h3>每日瀏覽量（次）</h3>
+						<div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+					</div>
+					<div>
+						<h3>頁面瀏覽分佈（次）</h3>
+						<div class="chart-wrap"><canvas id="topPagesChart"></canvas></div>
+					</div>
 				</div>
 				<div class="card" style="margin-bottom:0;">
+					<h3 style="margin-bottom:8px;">🌍 訪客地理分佈（人數）</h3>
 					<div class="map-wrap"><div id="map"></div></div>
-					<h3 style="margin:16px 0 4px; font-size:16px; color:#4a2e1b;">🌍 訪客地理分佈</h3>
-					<div class="geo-list" id="geoList"></div>
+					<div class="geo-footer">
+						<div class="map-footer" style="margin:0;"><strong>各城市訪客數</strong></div>
+						<div class="geo-list" id="geoList"></div>
+					</div>
 				</div>
 			</div>
 		</section>
@@ -146,7 +159,7 @@
 		<!-- 熱門文章 -->
 		<section id="panelArticles" class="panel" style="display:none;">
 			<div class="card">
-				<h2>🔥 熱門文章 Top 100</h2>
+				<h2>🔥 熱門文章 Top 100（次）</h2>
 				<div id="topArticles"></div>
 			</div>
 		</section>
@@ -154,7 +167,7 @@
 		<!-- 熱門彙典 -->
 		<section id="panelCompendium" class="panel" style="display:none;">
 			<div class="card">
-				<h2>📖 熱門彙典 Top 100</h2>
+				<h2>📖 熱門彙典 Top 100（次）</h2>
 				<div id="topCompendium"></div>
 			</div>
 		</section>
@@ -163,17 +176,17 @@
 		<section id="panelRecent" class="panel" style="display:none;">
 			<div class="card">
 				<h2>📑 最近事件（最近 100 筆）</h2>
-				<div style="overflow-x:auto;"><table class="data" id="eventTable"><thead><tr><th>時間</th><th>事件</th><th>頁面</th><th>停留</th><th>位置</th><th>訪客</th></tr></thead><tbody id="eventRows"><tr><td colspan="6">載入中...</td></tr></tbody></table></div>
+				<div style="overflow-x:auto;"><table class="data" id="eventTable"><thead><tr><th>時間</th><th>事件</th><th>頁面</th><th>停留秒數</th><th>位置</th><th>訪客</th></tr></thead><tbody id="eventRows"><tr><td colspan="6">載入中...</td></tr></tbody></table></div>
 			</div>
 		</section>
 
 		<!-- 訪客 -->
 		<section id="panelVisitors" class="panel" style="display:none;">
 			<div class="card">
-				<h2>👤 不重複訪客</h2>
+				<h2>👤 不重複訪客（個）</h2>
 				<div class="stat" style="margin-bottom:16px;max-width:240px;">
 					<div class="value" id="uniqueVisitorsLarge">-</div>
-					<div class="label">不重複 session 數</div>
+					<div class="label">不重複 session 數（人）</div>
 				</div>
 				<div id="visitorGroups"></div>
 			</div>
@@ -215,7 +228,7 @@
 	function simplifyPage(url) {
 		const path = url.split('?')[0].replace(/index\.html$/, '/');
 		if (path === '/') return '首頁';
-		if (path.startsWith('/ghoststory/article/')) return '日誌文章';
+		if (path.startsWith('/ghoststory/article/')) return '文章';
 		if (path === '/ghoststory/' || path === '/ghoststory') return '日誌首頁';
 		if (path.startsWith('/services/compendium/detail.html')) return '彙典';
 		if (path.startsWith('/services/compendium')) return '彙典首頁';
@@ -227,7 +240,8 @@
 
 	function shortSessionId(sid) {
 		if (!sid) return '-';
-		return sid.split('_')[0].slice(-6);
+		const head = sid.split('_')[0] || sid;
+		return head.slice(-6);
 	}
 
 	async function loadAnalytics() {
@@ -253,29 +267,24 @@
 	function refreshUI(items, postsArr, servicesArr, days) {
 		const postsMap = new Map();
 		(postsArr || []).forEach(p => { if (p.PostID != null) postsMap.set(String(p.PostID), p); });
+		const announcementIds = new Set();
+		(postsArr || []).forEach(p => { if (String(p['標題'] || '').startsWith('【公告】')) announcementIds.add(String(p.PostID)); });
+
 		const servicesMap = new Map();
 		(servicesArr || []).forEach(s => { if (s.ID) servicesMap.set(String(s.ID), s); });
 
 		const total = items.length;
 		const uniqueSessions = new Set(items.map(i => i.session_id).filter(Boolean)).size;
-		const uniquePages = new Set(items.map(i => i.page_url || '/')).size;
+		const uniquePages = new Set(items.map(i => simplifyPage(i.page_url || '/'))).size;
 		const stays = items.filter(i => i.stay_time_seconds != null).map(i => i.stay_time_seconds || 0);
 		const totalStay = stays.reduce((a, b) => a + b, 0);
 		const avg = stays.length ? Math.round(totalStay / stays.length) : 0;
 		const today = items.filter(i => new Date(i.created_at).toDateString() === new Date().toDateString()).length;
 
-		$('totalViews').innerText = total;
-		$('uniqueVisitors').innerText = uniqueSessions;
-		$('uniquePages').innerText = uniquePages;
-		$('totalStay').innerText = totalStay + 's';
-		$('avgStay').innerText = avg + 's';
-		$('todayViews').innerText = today;
-		$('uniqueVisitorsLarge').innerText = uniqueSessions;
-
-		// map page_url counts for chart
+		// map simplified category → count
 		const pageCount = {};
 		items.forEach(i => {
-			const p = i.page_url || '/';
+			const p = simplifyPage(i.page_url || '/');
 			pageCount[p] = (pageCount[p] || 0) + 1;
 		});
 
@@ -285,19 +294,24 @@
 			const c = (i.city || i.country_name || '').trim();
 			if (c) cityCount[c] = (cityCount[c] || 0) + 1;
 		});
-		const geoList = Object.entries(cityCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+		const geoList = Object.entries(cityCount).sort((a, b) => b[1] - a[1]).slice(0, 20);
 		$('geoList').innerHTML = geoList.map(([name, count]) => `<span class="geo-pill">${esc(name)} · ${count}</span>`).join('') || '<span style="color:#8b7355;">尚無地理資料</span>';
-		const topCity = Object.entries(cityCount).sort((a, b) => b[1] - a[1])[0];
-		$('topCity').innerText = topCity ? topCity[0] : '-';
+		$('totalViews').innerText = total;
+		$('uniqueVisitors').innerText = uniqueSessions;
+		$('uniquePages').innerText = uniquePages;
+		$('totalStay').innerText = totalStay + 's';
+		$('avgStay').innerText = avg + 's';
+		$('todayViews').innerText = today;
+		$('uniqueVisitorsLarge').innerText = uniqueSessions;
 
 		// --- Top pages chart ---
-		const sorted = Object.entries(pageCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+		const sorted = Object.entries(pageCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
 		const ctx2 = $('topPagesChart').getContext('2d');
 		if (chartPages) chartPages.destroy();
 		chartPages = new Chart(ctx2, {
 			type: 'bar',
 			data: {
-				labels: sorted.map(([p]) => simplifyPage(p)),
+				labels: sorted.map(([p]) => p),
 				datasets: [{
 					label: '瀏覽次數',
 					data: sorted.map(([_, c]) => c),
@@ -308,7 +322,7 @@
 				responsive: true,
 				maintainAspectRatio: false,
 				plugins: { legend: { display: false } },
-				scales: { y: { beginAtZero: true } }
+				scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
 			}
 		});
 
@@ -330,7 +344,7 @@
 			data: {
 				labels: Object.keys(dayMap),
 				datasets: [{
-					label: '瀏覽量',
+					label: '瀏覽次數',
 					data: Object.values(dayMap),
 					borderColor: '#8b7355',
 					backgroundColor: 'rgba(139, 115, 85, 0.2)',
@@ -338,7 +352,7 @@
 					tension: 0.4
 				}]
 			},
-			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+			options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
 		});
 
 		// --- Heatmap ---
@@ -359,8 +373,9 @@
 		items.forEach(i => {
 			const p = i.page_url || '/';
 			const q = parseQuery(p);
-			const pid = q.id || '';
-			if (p.startsWith('/ghoststory/article/') && pid) {
+			const pid = q.id ? String(q.id).split('_')[0] : '';
+			const isFromNotices = (q.from === 'notices') || (pid && announcementIds.has(pid));
+			if (p.startsWith('/ghoststory/article/') && pid && !isFromNotices) {
 				articleCount[pid] = (articleCount[pid] || 0) + 1;
 			} else if (p.startsWith('/services/compendium/detail.html') && pid) {
 				compendiumCount[pid] = (compendiumCount[pid] || 0) + 1;
@@ -371,9 +386,8 @@
 			.sort((a, b) => b[1] - a[1])
 			.slice(0, 100)
 			.map(([id, count]) => {
-				const pid = String(id).split('_')[0];
-				const p = postsMap.get(pid) || {};
-				const title = p['標題'] || `PostID ${pid}`;
+				const p = postsMap.get(String(id)) || {};
+				const title = p['標題'] || `PostID ${id}`;
 				const url = `/ghoststory/article/?id=${encodeURIComponent(id)}`;
 				const excerpt = (p['貼文內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').slice(0, 80).trim();
 				return { id, title, url, excerpt, count };
@@ -410,7 +424,6 @@
 			</li>
 		`).join('') : '<div style="color:#8b7355;">尚無彙典資料</div>';
 
-		// --- Recent events ---
 		const recent = [...items].slice(-100).reverse();
 		$('eventRows').innerHTML = recent.map(i => {
 			const t = new Date(i.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
@@ -420,7 +433,6 @@
 			return `<tr><td>${esc(t)}</td><td>${esc(i.event_name || '-')}</td><td>${esc(pageName)}</td><td>${i.stay_time_seconds != null ? esc(i.stay_time_seconds + 's') : '-'}</td><td>${esc(pos || '-')}</td><td><span class="path-tag">${esc(session)}</span></td></tr>`;
 		}).join('') || '<tr><td colspan="6">（空）</td></tr>';
 
-		// --- Visitors panel: group by session_id ---
 		const sessionMap = {};
 		items.forEach(i => {
 			const sid = i.session_id || 'unknown';
@@ -428,7 +440,7 @@
 			sessionMap[sid].push(i);
 		});
 		const sessions = Object.entries(sessionMap).sort((a, b) => b[1][0].created_at.localeCompare(a[1][0].created_at));
-		const visitorHtml = sessions.map(([sid, events]) => {
+		$('visitorGroups').innerHTML = sessions.map(([sid, events]) => {
 			const totalStayTime = events.reduce((s, e) => s + (e.stay_time_seconds || 0), 0);
 			const latest = events[events.length - 1] || events[0];
 			const latestStr = latest ? new Date(latest.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '';
@@ -451,10 +463,8 @@
 					<div class="visitor-body" id="vb-${esc(sid)}">${eventsHtml}</div>
 				</div>
 			`;
-		}).join('');
-		$('visitorGroups').innerHTML = visitorHtml || '<div style="color:#8b7355;">尚無訪客資料</div>';
+		}).join('') || '<div style="color:#8b7355;">尚無訪客資料</div>';
 
-		// toggle visitor accordion
 		$('visitorGroups').querySelectorAll('.visitor-header').forEach(header => {
 			header.addEventListener('click', () => {
 				const sid = header.dataset.sid;

@@ -18,8 +18,8 @@
 		.topbar button:hover { background: #6d5a3e; }
 		#adminUser { font-size: 12px; color: #8b7355; width: 100%; }
 		.tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-		.tabs button { padding: 10px 18px; border: 1px solid #dcbfa2; background: #fff; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: bold; color: #5c4332; }
-		.tabs button.active { background: #8b7355; color: #fff; border-color: #8b7355; }
+		.tabs button, .tabs .tab-link { padding: 10px 18px; border: 1px solid #dcbfa2; background: #fff; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: bold; color: #5c4332; text-decoration: none; display: inline-block; }
+		.tabs button.active, .tabs .tab-link:hover { background: #8b7355; color: #fff; border-color: #8b7355; }
 		.panel { background: #fff; border: 1px solid #eaeaea; border-radius: 12px; padding: 20px; display: none; }
 		.panel.active { display: block; }
 		.toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
@@ -89,6 +89,7 @@
 		<button data-tab="images">🖼️ 圖片</button>
 		<button data-tab="clientpush">📣 推播</button>
 		<button data-tab="sys">🩺 系統</button>
+		<a href="./analytics.html" class="tab-link">📊 分析</a>
 	</div>
 
 	<section id="tab-posts" class="panel">
@@ -172,7 +173,6 @@
 			<button id="healthBtn">🩺 檢測 API</button>
 			<button id="syncPostsBtn">🔄 重建版本戳</button>
 			<button id="clearCacheBtn" class="ghost">清除本機快取</button>
-			<a href="./analytics.html" class="rowbtn" style="text-decoration:none;">📊 分析儀表板</a>
 		</div>
 		<table class="data"><thead><tr><th>項目</th><th>狀態</th><th>說明</th></tr></thead>
 		<tbody id="healthRows"><tr><td colspan="3">尚未檢測</td></tr></tbody></table>
