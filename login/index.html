@@ -36,7 +36,7 @@
 </div>
 
 <script type="module">
-	import { getSupabase, getSession } from './Javascript/adminAuth.js?v=20261011';
+	import { getSupabase, getSession, logAdminEvent } from './Javascript/adminAuth.js?v=20261011';
 
 	const sb = await getSupabase();
 	const status = document.getElementById('status');
@@ -64,8 +64,10 @@
 		if (error) {
 			status.innerText = '登入失敗：' + error.message;
 			btn.disabled = false;
+			logAdminEvent('Login_Failed', email);
 			return;
 		}
+		logAdminEvent('Login_Success', email);
 		location.replace(nextPage);
 	};
 </script>

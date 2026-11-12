@@ -1,6 +1,7 @@
 import { getIni, getCombinedId } from '/Javascript/global.js?v=20261031';
 import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261031';
 import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261031';
+import { getSupabase } from './Javascript/adminAuth.js?v=20261011';
 
 // 資料庫 = GitHub 靜態 JSON（不再經 GAS）
 // 文章 -> spiritref.github.io/Data/postFB.json
@@ -23,7 +24,6 @@ let noticePage = 1;
 const ADMIN_PAGE = 10;
 // 暫存制：異動先記帳，按儲存才一次寫入
 let pendingOps = [];
-let pendingLogs = [];
 
 function markDirty() {
 	updateSaveBar();
@@ -207,7 +207,7 @@ function applyOps(arr, ops) {
 // 儲存：各檔一次寫入＋版本戳＋操作紀錄一次結算
 // save all
 async function saveAll() {
-	if (!pendingOps.length && !pendingLogs.length) return;
+	if (!pendingOps.length) return;
 	setStatus('⏳ 儲存中...', 'blue');
 	try {
 		const pat = await ensurePat();
@@ -250,9 +250,7 @@ async function saveAll() {
 				await ghWriteFile(pat, JSON_REPO, 'sitemap.xml', sitemapXml, 'Admin save sitemap');
 			} catch (e) { console.warn('sitemap 更新失敗（不影響本體）:', e); }
 		}
-		await flushLogs(pat);
 		pendingOps = [];
-		pendingLogs = [];
 		updateSaveBar();
 		setStatus('✅ 已儲存，前台約 1~3 分鐘生效', 'green');
 	} catch (e) {
@@ -260,31 +258,8 @@ async function saveAll() {
 	}
 }
 
-async function flushLogs(pat) {
-	if (!pendingLogs.length) return;
-	const cutoff = Date.now() - OPLOG_KEEP_MS;
-	const api = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${OPLOG_PATH}`;
-	const h = ghHeaders(pat);
-	let sha = null;
-	let arr = [];
-	try {
-		const g = await fetch(api, { headers: h });
-		if (g.ok) {
-			const j = await g.json();
-			sha = j.sha;
-			const parsed = JSON.parse(fromB64(j.content));
-			if (Array.isArray(parsed)) arr = parsed;
-		}
-	} catch (e) {}
-	arr = [...pendingLogs.slice().reverse(), ...arr].filter(e => e && (Date.now() - new Date(e.t).getTime()) < cutoff).slice(0, 500);
-	const body = { message: `oplog: ${pendingLogs.length} entries`, content: toB64(JSON.stringify(arr, null, 1)) };
-	if (sha) body.sha = sha;
-	await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
-}
-
 async function discardAll() {
 	pendingOps = [];
-	pendingLogs = [];
 	updateSaveBar();
 	setStatus('⏳ 已捨棄暫存，重新載入...', 'blue');
 	try {
@@ -296,8 +271,6 @@ async function discardAll() {
 	setTimeout(() => setStatus(''), 2000);
 }
 
-const OPLOG_PATH = 'Data/admin-oplog.json';
-const OPLOG_KEEP_MS = 90 * 24 * 3600 * 1000; // 只保留3個月
 
 function deviceLabel() {
 	try {
@@ -318,69 +291,60 @@ function deviceLabel() {
 	} catch (e) { return '未知裝置'; }
 }
 
-// netInfo 已移至 /Javascript/adminCommon.js
-
-function logOp(event, detail) {
-	const entry = { t: new Date().toISOString(), admin: session?.user?.email || '?', event, detail: detail || '', dev: deviceLabel(), ip: '', loc: '' };
-	try {
-		const arr = JSON.parse(localStorage.getItem('admin_oplog') || '[]');
-		arr.unshift(entry);
-		localStorage.setItem('admin_oplog', JSON.stringify(arr.slice(0, 200)));
-	} catch (e) {}
-	renderOplog();
-	pendingLogs.push(entry);
-	markDirty();
-	netInfo().then(info => {
-		entry.ip = info.ip;
-		entry.loc = info.loc;
-		try {
-			const arr = JSON.parse(localStorage.getItem('admin_oplog') || '[]');
-			if (arr[0] && arr[0].t === entry.t) {
-				arr[0] = entry;
-				localStorage.setItem('admin_oplog', JSON.stringify(arr.slice(0, 200)));
-			}
-		} catch (e) {}
-		renderOplog();
-	}).catch(() => {});
-}
-
 function oplogText(e) {
 	if (typeof e === 'string') return e;
-	const extra = [e.dev, e.loc, e.ip].filter(Boolean).join(' · ');
-	return `${new Date(e.t).toLocaleString()} [${e.admin || '?'}] ${e.event || ''} ${e.detail || ''}${extra ? ' (' + extra + ')' : ''}`;
+	const extra = [e.device, e.location, e.ip].filter(Boolean).join(' · ');
+	return `${new Date(e.created_at).toLocaleString()} [${e.user_email || '?'}] ${e.event || ''} ${e.detail || ''}${extra ? ' (' + extra + ')' : ''}`;
 }
 
 function refreshDevFilter(list) {
 	const sel = $('oplogDev');
 	if (!sel) return;
 	const cur = sel.value;
-	const devs = [...new Set(list.map(e => (e && e.dev) || '未知裝置'))];
+	const devs = [...new Set((list || []).map(e => (e && e.device) || '未知裝置'))];
 	sel.innerHTML = '<option value="">全部裝置</option>' + devs.map(d => `<option value="${esc(d).replace(/"/g, '&quot;')}"${d === cur ? ' selected' : ''}>${esc(d)}</option>`).join('');
 }
 
-function renderOplog() {
-	const devFilter = ($('oplogDev') && $('oplogDev').value) || '';
-	const show = (arr) => {
-		const list = arr.filter(e => {
-			if (e && typeof e === 'object' && e.t && (Date.now() - new Date(e.t).getTime()) >= OPLOG_KEEP_MS) return false;
-			if (devFilter && e && typeof e === 'object' && ((e.dev || '未知裝置') !== devFilter)) return false;
-			return true;
-		});
-		refreshDevFilter(arr.filter(e => e && typeof e === 'object'));
-		$('oplog').innerText = list.length ? list.map(oplogText).join('\n') : '（空）';
-	};
+async function loadOplogFromDb() {
 	try {
-		const arr = JSON.parse(localStorage.getItem('admin_oplog') || '[]');
-		show(Array.isArray(arr) ? arr : []);
-	} catch (e) {}
-	// 有共用檔就以它為準（多管理員、多裝置同步）
-	fetch(`https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${OPLOG_PATH}`)
-		.then(r => r.ok ? r.json() : null)
-		.then(j => {
-			if (!j) return;
-			const arr = JSON.parse(fromB64(j.content));
-			if (Array.isArray(arr)) show(arr);
-		}).catch(() => {});
+		const sb = await getSupabase();
+		const { data, error } = await sb.from('admin_action_logs').select('*').order('created_at', { ascending: false }).limit(200);
+		if (error) throw error;
+		return data || [];
+	} catch (e) {
+		console.warn('讀取紀錄失敗:', e);
+		return [];
+	}
+}
+
+async function renderOplog() {
+	const list = await loadOplogFromDb();
+	refreshDevFilter(list);
+	const devFilter = ($('oplogDev') && $('oplogDev').value) || '';
+	const filtered = list.filter(e => !devFilter || (e && e.device) === devFilter);
+	const el = $('oplog');
+	if (el) el.innerText = filtered.length ? filtered.map(oplogText).join('\n') : '（空）';
+}
+
+async function logOp(event, detail) {
+	try {
+		const sb = await getSupabase();
+		const info = await netInfo().catch(() => ({}));
+		const entry = {
+			created_at: new Date().toISOString(),
+			event,
+			detail: detail || '',
+			device: (typeof deviceLabel === 'function' ? deviceLabel() : '未知裝置'),
+			user_email: session?.user?.email || null,
+			ip: info.ip || null,
+			location: info.loc || null
+		};
+		const { error } = await sb.from('admin_action_logs').insert([entry]);
+		if (error) console.warn('寫入紀錄失敗:', error);
+	} catch (e) {
+		console.warn('logOp 失敗:', e);
+	}
+	renderOplog();
 }
 
 // ---------- 文章 ----------
@@ -1120,7 +1084,7 @@ export async function initAdmin(sess) {
 	$('saveAllBtn').onclick = saveAll;
 	$('discardBtn').onclick = discardAll;
 	window.addEventListener('beforeunload', (e) => {
-		if (pendingOps.length || pendingLogs.length) {
+		if (pendingOps.length) {
 			e.preventDefault();
 			e.returnValue = '';
 		}

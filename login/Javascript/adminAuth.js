@@ -27,6 +27,34 @@ export async function getSession() {
 	return data.session;
 }
 
+// 寫入後台登入/登出/閒置紀錄（依方案 A 使用 ipapi.co）
+export async function logAdminEvent(eventName, email) {
+	try {
+		let geo = {};
+		try {
+			const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+			geo = await r.json().catch(() => ({}));
+		} catch (e) { console.warn('IP 服務讀取失敗:', e); }
+
+		const sb = await getSupabase();
+		const { error } = await sb.from('admin_login_events').insert([{
+			event_name: eventName,
+			user_email: email || null,
+			ip: geo.ip || null,
+			city: geo.city || null,
+			region: geo.region || null,
+			country_name: geo.country_name || null,
+			user_agent: navigator.userAgent || null,
+			language: navigator.language || null,
+			timezone: geo.timezone || null,
+			platform: navigator.platform || null
+		}]);
+		if (error) console.warn('登入紀錄寫入失敗:', error);
+	} catch (e) {
+		console.warn('logAdminEvent 失敗:', e);
+	}
+}
+
 // 無 session 時踢回登入頁（帶 next，登入後回到原頁），回傳 session
 export async function requireAdmin(loginPage = './') {
 	const session = await getSession();
@@ -54,9 +82,12 @@ export function startIdleLogout(loginPage = './') {
 		idleTimer = setTimeout(async () => {
 			try {
 				sessionStorage.setItem('idle_logout', '1');
+				let email = null;
+				try { const s = await getSession(); email = s?.user?.email || null; } catch (e) {}
+				await logAdminEvent('Idle_Logout', email);
 				const sb = await getSupabase();
 				await sb.auth.signOut();
-			} catch (e) {}
+			} catch (e) { console.warn('idle logout error:', e); }
 			location.replace(loginPage + '?timeout=1');
 		}, idleMs());
 	};
