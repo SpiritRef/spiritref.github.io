@@ -294,7 +294,7 @@ function deviceLabel() {
 function oplogText(e) {
 	if (typeof e === 'string') return e;
 	const extra = [e.device, e.location, e.ip].filter(Boolean).join(' · ');
-	return `${new Date(e.created_at).toLocaleString()} [${e.user_email || '?'}] ${e.event || ''} ${e.detail || ''}${extra ? ' (' + extra + ')' : ''}`;
+	return `${new Date(e.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })} [${e.user_email || '?'}] ${e.event || ''} ${e.detail || ''}${extra ? ' (' + extra + ')' : ''}`;
 }
 
 function refreshDevFilter(list) {
@@ -347,7 +347,7 @@ async function loadLogins() {
 		const eventFilter = ($('loginsEvent') && $('loginsEvent').value) || '';
 		const filtered = items.filter(item => (!userFilter || item.user_email === userFilter) && (!eventFilter || item.event_name === eventFilter));
 		$('loginRows').innerHTML = filtered.map(item => {
-			const t = new Date(item.created_at).toLocaleString();
+			const t = new Date(item.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
 			const pos = [item.city, item.region, item.country_name].filter(Boolean).join(' · ');
 			const devMatch = (item.user_agent || '').match(/Android|iPhone|iPad|Linux|Windows|Macintosh|Mac/);
 			const dev = devMatch ? devMatch[0] : '其他裝置';
@@ -1008,7 +1008,7 @@ export async function initAdmin(sess) {
 			imgLoaded = true;
 			loadImages();
 		}
-		if (b.dataset.tab === 'logins') loadLogins();
+		if (b.dataset.tab === 'sys') loadLogins();
 		if (b.dataset.tab === 'posts' && !allPosts.length) loadPosts();
 		if (b.dataset.tab === 'notices' && !allNotices.length) loadNotices();
 	});
