@@ -287,8 +287,14 @@ function deviceLabel() {
 		else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) br = 'Safari';
 		else if (/Firefox\//i.test(ua)) br = 'Firefox';
 		else if (/LINE\//i.test(ua)) br = 'LINE內建';
-		return `${os}${br ? '·' + br : ''}`;
+		return `${os}${br ? '·' + br : ''} ${window.innerWidth}x${window.innerHeight}`;
 	} catch (e) { return '未知裝置'; }
+}
+
+// 將裝置字串標準化為「系統·瀏覽器」（去掉結尾的「 寬x高」）
+function normalizeDevice(d) {
+	if (!d) return '未知裝置';
+	return String(d).replace(/\s+\d+x\d+$/, '').trim();
 }
 
 function oplogText(e) {
@@ -301,7 +307,7 @@ function refreshDevFilter(list) {
 	const sel = $('oplogDev');
 	if (!sel) return;
 	const cur = sel.value;
-	const devs = [...new Set((list || []).map(e => (e && e.device) || '未知裝置'))];
+	const devs = [...new Set((list || []).map(e => normalizeDevice(e && e.device)))];
 	sel.innerHTML = '<option value="">全部裝置</option>' + devs.map(d => `<option value="${esc(d).replace(/"/g, '&quot;')}"${d === cur ? ' selected' : ''}>${esc(d)}</option>`).join('');
 }
 
@@ -365,7 +371,7 @@ async function renderOplog() {
 	refreshUserFilter(list);
 	const devFilter = ($('oplogDev') && $('oplogDev').value) || '';
 	const userFilter = ($('oplogUser') && $('oplogUser').value) || '';
-	const filtered = list.filter(e => (!devFilter || (e && e.device) === devFilter) && (!userFilter || (e && e.user_email) === userFilter));
+	const filtered = list.filter(e => (!devFilter || normalizeDevice(e && e.device) === devFilter) && (!userFilter || (e && e.user_email) === userFilter));
 	const el = $('oplog');
 	if (el) el.innerText = filtered.length ? filtered.map(oplogText).join('\n') : '（空）';
 }

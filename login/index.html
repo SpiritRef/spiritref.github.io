@@ -68,6 +68,8 @@
 			return;
 		}
 		await logAdminEvent('Login_Success', email);
+		status.innerText = '登入成功，即將進入後台...';
+		await new Promise(r => setTimeout(r, 1200));
 		location.replace(nextPage);
 	};
 </script>
