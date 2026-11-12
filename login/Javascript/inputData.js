@@ -1,5 +1,5 @@
-import { getSession } from './adminAuth.js?v=20261011';
-import { GITHUB_USER, JSON_REPO, ghHeaders, toB64 as toBase64Utf8, fromB64 as fromBase64Utf8, netInfo } from '/Javascript/adminCommon.js?v=20261031';
+import { getSession } from './adminAuth.js?v=20261212';
+import { GITHUB_USER, JSON_REPO, ghHeaders, toB64 as toBase64Utf8, fromB64 as fromBase64Utf8, netInfo } from '/Javascript/adminCommon.js?v=20261212';
 
 async function requireSession() {
 	const session = await getSession();

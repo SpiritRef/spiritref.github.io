@@ -76,7 +76,7 @@
 	<div id="status"></div>
 </div>
 
-<script type="module" src="Javascript/inputData.js?v=20261031"></script>
+<script type="module" src="Javascript/inputData.js?v=20261212"></script>
 <script>
 	// fail-closed 兜底：8 秒內 gate 沒完成，代表 CDN/模組載入失敗，表單保持隱藏
 	setTimeout(function() {
@@ -87,7 +87,7 @@
 	}, 8000);
 </script>
 <script type="module">
-	import { requireAdmin, logoutAndGo, onAuthChange } from './Javascript/adminAuth.js?v=20261011';
+	import { requireAdmin, logoutAndGo, onAuthChange } from './Javascript/adminAuth.js?v=20261212';
 	try {
 		const session = await requireAdmin('./');
 		if (session) {

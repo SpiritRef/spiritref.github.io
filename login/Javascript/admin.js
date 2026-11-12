@@ -1,7 +1,7 @@
-import { getIni, getCombinedId } from '/Javascript/global.js?v=20261031';
-import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261031';
-import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261031';
-import { getSupabase } from './adminAuth.js?v=20261011';
+import { getIni, getCombinedId } from '/Javascript/global.js?v=20261212';
+import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261212';
+import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261212';
+import { getSupabase } from './adminAuth.js?v=20261212';
 
 // 資料庫 = GitHub 靜態 JSON（不再經 GAS）
 // 文章 -> spiritref.github.io/Data/postFB.json
