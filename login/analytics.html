@@ -17,27 +17,29 @@
 		.main-content { padding: 24px; overflow-x: auto; }
 
 		@media (max-width: 700px) {
-			.analytics-layout { grid-template-columns: 64px 1fr; }
-			.sidebar { padding: 8px 4px; align-items: center; }
-			.sidebar h1 { display: none; }
-			.sidebar-btn { font-size: 11px; padding: 8px 2px; text-align: center; line-height: 1.2; }
-			.back-admin .sidebar-btn { font-size: 11px; }
-			.main-content { padding: 16px 12px; }
-			.card { padding: 12px; margin-bottom: 12px; overflow: hidden; }
-			h2 { font-size: 15px; margin-bottom: 8px; }
-			h3 { font-size: 13px; margin-bottom: 4px; }
-			.unit { margin-bottom: 8px; }
-			.stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-			.stat { padding: 10px 8px; }
-			.stat .value { font-size: 1.4em; }
-			.chart-wrap { height: 220px; padding: 10px; margin-bottom: 12px; }
-			.map-wrap { height: 220px; }
-			.toolbar { gap: 6px; flex-wrap: wrap; }
-			.toolbar select, .toolbar button { padding: 5px 8px; font-size: 13px; }
-			.rank-item { flex-direction: column; gap: 4px; align-items: flex-start; }
-			.rank-num { width: 24px; height: 24px; font-size: 12px; }
-			.rank-desc { white-space: normal; font-size: 11px; }
-			.rank-meta { font-size: 11px; }
+			.analytics-layout { grid-template-columns: 96px 1fr; }
+			.sidebar { padding: 10px 6px; align-items: stretch; gap: 6px; }
+			.sidebar h1 { font-size: 13px; text-align: center; margin-bottom: 8px; }
+			.sidebar-btn { font-size: 12px; padding: 10px 6px; text-align: center; }
+			.back-admin .sidebar-btn { font-size: 12px; }
+			.main-content { padding: 18px 16px; }
+			.card { padding: 16px; margin-bottom: 16px; }
+			h2 { font-size: 17px; margin-bottom: 10px; }
+			h3 { font-size: 15px; margin-bottom: 6px; }
+			.stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+			.stat { padding: 14px 12px; }
+			.stat .value { font-size: 1.7em; }
+			.stat .label { font-size: 12px; }
+			.chart-wrap { height: 240px; padding: 12px; }
+			.map-wrap { height: 260px; }
+			.toolbar { gap: 8px; flex-wrap: wrap; }
+			.toolbar select, .toolbar button { padding: 8px 12px; font-size: 14px; }
+			.rank-item { flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; }
+			.rank-num { width: 28px; height: 28px; font-size: 13px; }
+			.rank-desc { white-space: normal; font-size: 12px; }
+			.rank-meta { font-size: 12px; }
+			.rank-title { font-size: 15px; }
+			.path-tag { font-size: 11px; }
 		}
 		.sidebar { background: linear-gradient(180deg, #f7ebd7 0%, #e6d3af 100%); border-right: 1px solid #dcbfa2; padding: 20px 10px; display:flex; flex-direction:column; gap:8px; }
 		.sidebar h1 { font-size: 16px; color: #4a2e1b; margin: 0 0 10px 4px; }
