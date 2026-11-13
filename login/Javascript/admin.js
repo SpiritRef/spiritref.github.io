@@ -458,6 +458,31 @@ function oplogText(e) {
 	return `${new Date(e.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })} [${e.user_email || '?'}] ${e.event || ''} ${e.detail || ''}${extra ? ' (' + extra + ')' : ''}`;
 }
 
+function monthOf(iso) {
+	try {
+		const d = new Date(iso);
+		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+	} catch (e) { return ''; }
+}
+
+function summarizeCount(items, key) {
+	const map = {};
+	for (const it of (items || [])) {
+		const k = String((it && it[key]) ?? '未知');
+		map[k] = (map[k] || 0) + 1;
+	}
+	const parts = Object.entries(map).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`);
+	return `共 ${(items || []).length} 筆` + (parts.length ? '（' + parts.join('、') + '）' : '');
+}
+
+function refreshMonthFilter(list, selId) {
+	const sel = $(selId);
+	if (!sel) return;
+	const cur = sel.value;
+	const months = [...new Set((list || []).map(item => monthOf(item && item.created_at)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+	sel.innerHTML = '<option value="">全部月份</option>' + months.map(m => `<option value="${esc(m)}"${m === cur ? ' selected' : ''}>${esc(m)}</option>`).join('');
+}
+
 function refreshDevFilter(list) {
 	const sel = $('oplogDev');
 	if (!sel) return;
@@ -493,6 +518,7 @@ async function loadLogins() {
 		if (error) throw error;
 		const items = data || [];
 
+		refreshMonthFilter(items, 'loginsMonth');
 		const userSel = $('loginsUser');
 		const eventSel = $('loginsEvent');
 		const userOpts = [...new Set(items.map(item => item.user_email).filter(Boolean))];
@@ -510,7 +536,13 @@ async function loadLogins() {
 
 		const userFilter = ($('loginsUser') && $('loginsUser').value) || '';
 		const eventFilter = ($('loginsEvent') && $('loginsEvent').value) || '';
-		const filtered = items.filter(item => (!userFilter || item.user_email === userFilter) && (!eventFilter || item.event_name === eventFilter));
+		const monthFilter = ($('loginsMonth') && $('loginsMonth').value) || '';
+		const filtered = items.filter(item => {
+			if (userFilter && item.user_email !== userFilter) return false;
+			if (eventFilter && item.event_name !== eventFilter) return false;
+			if (monthFilter && monthOf(item.created_at) !== monthFilter) return false;
+			return true;
+		});
 		$('loginRows').innerHTML = filtered.map(item => {
 			const t = new Date(item.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
 			const pos = [item.city, item.region, item.country_name].filter(Boolean).join(' · ');
@@ -518,9 +550,14 @@ async function loadLogins() {
 			const dev = devMatch ? devMatch[0] : '其他裝置';
 			return `<tr><td>${esc(t)}</td><td>${esc(item.event_name || '')}</td><td>${esc(item.user_email || '')}</td><td>${esc(item.ip || '')}</td><td>${esc(pos || '')}</td><td>${esc(dev)}</td></tr>`;
 		}).join('') || '<tr><td colspan="6">（空）</td></tr>';
+
+		const summary = $('loginsSummary');
+		if (summary) summary.innerText = summarizeCount(filtered, 'event_name');
 	} catch (e) {
 		console.warn('讀取登入紀錄失敗:', e);
 		$('loginRows').innerHTML = `<tr><td colspan="6">讀取失敗：${esc(e.message || String(e))}</td></tr>`;
+		const summary = $('loginsSummary');
+		if (summary) summary.innerText = '讀取失敗';
 	}
 }
 
@@ -528,11 +565,26 @@ async function renderOplog() {
 	const list = await loadOplogFromDb();
 	refreshDevFilter(list);
 	refreshUserFilter(list);
+	refreshMonthFilter(list, 'oplogMonth');
 	const devFilter = ($('oplogDev') && $('oplogDev').value) || '';
 	const userFilter = ($('oplogUser') && $('oplogUser').value) || '';
-	const filtered = list.filter(e => (!devFilter || normalizeDevice(e && e.device) === devFilter) && (!userFilter || (e && e.user_email) === userFilter));
-	const el = $('oplog');
-	if (el) el.innerText = filtered.length ? filtered.map(oplogText).join('\n') : '（空）';
+	const monthFilter = ($('oplogMonth') && $('oplogMonth').value) || '';
+	const filtered = list.filter(e => {
+		if (devFilter && normalizeDevice(e && e.device) !== devFilter) return false;
+		if (userFilter && (e && e.user_email) !== userFilter) return false;
+		if (monthFilter && monthOf(e && e.created_at) !== monthFilter) return false;
+		return true;
+	});
+	const tbody = $('oplogRows');
+	if (tbody) {
+		tbody.innerHTML = filtered.map(e => {
+			const t = new Date(e.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+			const loc = [e.location, e.ip].filter(Boolean).join(' · ');
+			return `<tr><td>${esc(t)}</td><td>${esc(e.user_email || '')}</td><td>${esc(e.event || '')}</td><td>${esc(e.detail || '')}</td><td>${esc(loc)}</td><td>${esc(e.device || '')}</td></tr>`;
+		}).join('') || '<tr><td colspan="6">（空）</td></tr>';
+	}
+	const summary = $('oplogSummary');
+	if (summary) summary.innerText = summarizeCount(filtered, 'event');
 }
 
 async function logOp(event, detail) {
@@ -1291,9 +1343,11 @@ export async function initAdmin(sess) {
 	$('healthBtn').onclick = healthCheck;
 	$('oplogDev').onchange = renderOplog;
 	$('oplogUser').onchange = renderOplog;
+	$('oplogMonth').onchange = renderOplog;
 	$('loginsReload').onclick = loadLogins;
 	$('loginsUser').onchange = loadLogins;
 	$('loginsEvent').onchange = loadLogins;
+	$('loginsMonth').onchange = loadLogins;
 	$('syncPostsBtn').onclick = rebuildVersion;
 	$('rebuildPagesBtn').onclick = rebuildAllStaticPages;
 	$('saveAllBtn').onclick = saveAll;

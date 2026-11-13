@@ -1,4 +1,4 @@
-import { getSession } from './adminAuth.js?v=20261212';
+import { getSession, getSupabase } from './adminAuth.js?v=20261212';
 import { GITHUB_USER, JSON_REPO, ghHeaders, toB64 as toBase64Utf8, fromB64 as fromBase64Utf8, netInfo } from '/Javascript/adminCommon.js?v=20261212';
 
 async function requireSession() {
@@ -8,6 +8,26 @@ async function requireSession() {
 		return null;
 	}
 	return session;
+}
+
+async function logOp(session, event, detail) {
+	try {
+		const sb = await getSupabase();
+		const info = await netInfo().catch(() => ({}));
+		const ua = navigator.userAgent || '';
+		const devMatch = ua.match(/Android|iPhone|iPad|Linux|Windows|Macintosh|Mac/);
+		const device = devMatch ? devMatch[0] : '其他裝置';
+		const { error } = await sb.from('admin_action_logs').insert([{
+			created_at: new Date().toISOString(),
+			event,
+			detail: detail || '',
+			device,
+			user_email: session?.user?.email || null,
+			ip: info.ip || null,
+			location: info.loc || null
+		}]);
+		if (error) console.warn('操作紀錄寫入失敗:', error);
+	} catch (e) { console.warn('logOp 失敗:', e); }
 }
 
 // --- 1. 配置設定（資料庫 = GitHub 靜態 JSON，不再經 GAS） ---
@@ -325,6 +345,8 @@ window.sendData = async function() {
 				}
 			}
 		} catch (se) { console.warn("靜態頁產生失敗（不影響發佈）:", se); }
+
+		logOp(session, '新增文章', `${arr[arr.length - 1]?.PostID ?? ''} ${title}`);
 
 		status.innerText = "✅ 已發佈！前台約 1~3 分鐘生效。";
 		status.style.color = "green";
