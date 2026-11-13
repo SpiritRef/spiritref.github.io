@@ -55,7 +55,7 @@ export function buildSitemapXml(posts, services) {
 		}
 	}
 
-	// Compendium 個別頁面（Services.json 沒有日期欄位，省略 lastmod）
+	// Compendium 個別頁面（以 Services.json 的發佈日期作為 lastmod）
 	if (Array.isArray(services)) {
 		for (const svc of services) {
 			const cat = svc ? (svc['分類'] != null ? String(svc['分類']) : (function(){const ks=Object.keys(svc);return ks.length? (svc[ks[0]] || '') : '';}())) : '';
@@ -63,7 +63,10 @@ export function buildSitemapXml(posts, services) {
 			const title = svc && svc['標題'] != null ? String(svc['標題']) : ((function(){const ks=Object.keys(svc);return ks.length>1 ? (svc[ks[1]] || '') : '';}()) || '');
 			if (!title) continue;
 			const compendiumId = (svc && svc['ID'] != null) ? svc['ID'] : title;
-			entries.push({ loc: `${base}/services/compendium/detail.html?id=${encodeURIComponent(compendiumId)}` });
+			const d = parseDate(svc);
+			const pad = (n) => String(n).padStart(2, '0');
+			const lastmod = d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : undefined;
+			entries.push({ loc: `${base}/services/compendium/detail.html?id=${encodeURIComponent(compendiumId)}`, lastmod });
 		}
 	}
 

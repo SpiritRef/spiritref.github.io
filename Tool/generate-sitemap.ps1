@@ -90,8 +90,14 @@ if (Test-Path $svcPath) {
         if (-not $compendiumId) { continue }
         $encoded = [System.Uri]::EscapeDataString($compendiumId)
         $url = "$base/services/compendium/detail.html?id=$encoded"
-        # Services.json 沒有發佈日期欄位，無法給出真實 lastmod，寧可省略也不要亂放
-        $entry = @{ loc=$url }
+        # 從 Services.json 的發佈日期取 lastmod（沒有就用今天）
+        $dateObj = $null
+        foreach ($pr in $props) {
+            $d = ConvertTo-DateTimeValue $pr.Value
+            if ($d) { $dateObj = $d; break }
+        }
+        $lastmod = if ($dateObj) { $dateObj.ToString("yyyy-MM-dd") } else { $today }
+        $entry = @{ loc=$url; lastmod=$lastmod }
         $entries += $entry
     }
 }
