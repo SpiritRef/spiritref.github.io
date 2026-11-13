@@ -51,7 +51,7 @@ export function buildSitemapXml(posts, services) {
 				lastmod = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 			}
 			const combined = `${pid}_${ts}`;
-			entries.push({ loc: `${base}/ghoststory/article/?id=${combined}`, lastmod });
+			entries.push({ loc: `${base}/ghoststory/article/${combined}.html`, lastmod });
 		}
 	}
 
@@ -66,7 +66,7 @@ export function buildSitemapXml(posts, services) {
 			const d = parseDate(svc);
 			const pad = (n) => String(n).padStart(2, '0');
 			const lastmod = d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : undefined;
-			entries.push({ loc: `${base}/services/compendium/detail.html?id=${encodeURIComponent(compendiumId)}`, lastmod });
+			entries.push({ loc: `${base}/services/compendium/${encodeURIComponent(compendiumId)}.html`, lastmod });
 		}
 	}
 

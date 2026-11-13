@@ -301,7 +301,7 @@
 	
 	        return `
 	            <div class="notice-item">
-	                <div class="compendium-q">第${cnNum(qNumber)}章 <a href="detail.html?id=${encodeURIComponent(item.ID || q)}" style="color:inherit;text-decoration:underline;">${q}</a></div>
+	                <div class="compendium-q">第${cnNum(qNumber)}章 <a href="${encodeURIComponent(item.ID || q)}.html" style="color:inherit;text-decoration:underline;">${q}</a></div>
 	                <div class="compendium-a">
 						<div class="compendium-answer-text">${a}</div>
 						${linksHtml}

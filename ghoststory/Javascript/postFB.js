@@ -261,7 +261,7 @@ function renderList(posts) {
         `;
 
         card.onclick = () => {
-            window.location.href = `article/?id=${urlId}`;
+            window.location.href = `article/${urlId}.html`;
         };
         list.appendChild(card);
     });

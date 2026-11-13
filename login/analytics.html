@@ -301,12 +301,12 @@
 			const postId = pid.includes('_') ? pid.split('_')[0] : pid;
 			const p = postsMap.get(String(postId));
 			const title = (p && p['標題']) ? String(p['標題']) : `ID ${pid}`;
-			return pageLink(`/ghoststory/article/?id=${encodeURIComponent(pid)}`, `日誌文章：${esc(title)}`) + noticeTag;
+			return pageLink(`/ghoststory/article/${encodeURIComponent(pid)}.html`, `日誌文章：${esc(title)}`) + noticeTag;
 		}
 		if (path.startsWith('/services/compendium/detail.html') && q.id) {
 			const s = servicesMap.get(String(q.id));
 			const title = (s && s['標題']) ? String(s['標題']) : `ID ${q.id}`;
-			return pageLink(`/services/compendium/detail.html?id=${encodeURIComponent(q.id)}`, `彙典：${esc(title)}`) + noticeTag;
+			return pageLink(`/services/compendium/${encodeURIComponent(q.id)}.html`, `彙典：${esc(title)}`) + noticeTag;
 		}
 		// 其他固定頁面：顯示名稱並可點擊（保持原路徑）
 		return pageLink(path, esc(simplifyPage(url))) + noticeTag;
@@ -332,12 +332,12 @@
 			const postId = pid.includes('_') ? pid.split('_')[0] : pid;
 			const p = postsMapCache.get(String(postId)) || {};
 			const title = p['標題'] || `PostID ${postId}`;
-			return pageLink(`/ghoststory/article/?id=${encodeURIComponent(pid)}`, `日誌文章：${esc(title)}`) + idNote(pid);
+			return pageLink(`/ghoststory/article/${encodeURIComponent(pid)}.html`, `日誌文章：${esc(title)}`) + idNote(pid);
 		}
 		if (path.startsWith('/services/compendium/detail.html') && q.id) {
 			const s = servicesMapCache.get(String(q.id)) || {};
 			const title = s['標題'] || `ID ${q.id}`;
-			return pageLink(`/services/compendium/detail.html?id=${encodeURIComponent(q.id)}`, `彙典：${esc(title)}`) + idNote(q.id);
+			return pageLink(`/services/compendium/${encodeURIComponent(q.id)}.html`, `彙典：${esc(title)}`) + idNote(q.id);
 		}
 		return pageLink(key, esc(simplifyPage(key)));
 	}
@@ -593,7 +593,7 @@
 				const postId = id.includes('_') ? id.split('_')[0] : id;
 				const p = postsMap.get(String(postId)) || {};
 				const title = p['標題'] || `PostID ${postId}`;
-				const url = `/ghoststory/article/?id=${encodeURIComponent(id)}`;
+				const url = `/ghoststory/article/${encodeURIComponent(id)}.html`;
 				const excerpt = (p['貼文內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').slice(0, 80).trim();
 				return { id, title, url, excerpt, count };
 			});
@@ -614,7 +614,7 @@
 			.map(([id, count]) => {
 				const s = servicesMap.get(String(id)) || {};
 				const title = s['標題'] || `ID ${id}`;
-				const url = `/services/compendium/detail.html?id=${encodeURIComponent(id)}`;
+				const url = `/services/compendium/${encodeURIComponent(id)}.html`;
 				const excerpt = (s['貼文內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').slice(0, 80).trim();
 				return { id, title, url, excerpt, count };
 			});

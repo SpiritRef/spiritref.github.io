@@ -1,5 +1,6 @@
 import { getIni, getCombinedId } from '/Javascript/global.js?v=20261212';
 import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261212';
+import { buildArticleHtml, buildCompendiumHtml, isPublished } from '/Javascript/buildArticle.js?v=20261212';
 import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261212';
 import { getSupabase } from './adminAuth.js?v=20261212';
 
@@ -94,6 +95,8 @@ async function ghModifyJson(pat, repo, path, transform, message) {
 			throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}（token 無效或權限不足？）`);
 		}
 		const next = transform(arr);
+		const verifyErrs = validateJsonArray(next, path);
+		if (verifyErrs.length) throw new Error(`JSON 驗證失敗（已中止寫入）：${verifyErrs.slice(0, 3).join('；')}`);
 		const body = { message, content: toB64(JSON.stringify(next, null, 1)) };
 		if (sha) body.sha = sha;
 		const p = await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
@@ -122,6 +125,116 @@ async function ghWriteFile(pat, repo, path, content, message) {
 		return true;
 	}
 	throw new Error('連續衝突，請稍後再試');
+}
+
+// 靜態頁輔助：目錄列表（GitHub contents API）
+async function ghListDir(pat, repo, path) {
+	const api = `https://api.github.com/repos/${GITHUB_USER}/${repo}/contents/${path}`;
+	const g = await fetch(api, { headers: ghHeaders(pat) });
+	if (g.status === 404) return [];
+	if (!g.ok) throw new Error(`讀取目錄 ${path} 失敗: HTTP ${g.status}`);
+	const arr = await g.json();
+	return Array.isArray(arr) ? arr.filter(f => f && f.type === 'file') : [];
+}
+
+// 刪除檔案（需 sha）
+async function ghDeleteFile(pat, repo, path, sha, message) {
+	const api = `https://api.github.com/repos/${GITHUB_USER}/${repo}/contents/${path}`;
+	const h = ghHeaders(pat);
+	const body = { message, sha };
+	const p = await fetch(api, { method: 'DELETE', headers: h, body: JSON.stringify(body) });
+	if (!p.ok) throw new Error(`刪除 ${path} 失敗: HTTP ${p.status}`);
+	return true;
+}
+
+// 寫入靜態頁（byte 比對一致就跳過，避免無意義的 commit）
+async function ghWriteFileIfChanged(pat, repo, path, content, message) {
+	const api = `https://api.github.com/repos/${GITHUB_USER}/${repo}/contents/${path}`;
+	const h = ghHeaders(pat);
+	for (let attempt = 0; attempt < 2; attempt++) {
+		let sha = null;
+		const g = await fetch(api, { headers: h });
+		if (g.ok) {
+			const j = await g.json();
+			sha = j.sha;
+			try {
+				if (fromB64(j.content) === content) return 'skipped';
+			} catch (e) { /* 解碼失敗就視為需要重寫 */ }
+		} else if (g.status !== 404) {
+			throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}`);
+		}
+		const body = { message, content: toB64(content) };
+		if (sha) body.sha = sha;
+		const p = await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
+		if (p.status === 409 && attempt === 0) continue;
+		if (!p.ok) throw new Error(`寫入 ${path} 失敗: HTTP ${p.status} ${(await p.text()).slice(0, 100)}`);
+		return 'written';
+	}
+	throw new Error('連續衝突，請稍後再試');
+}
+
+// 清掉不再存在的靜態頁（文章刪除 / 發佈日期改變 / 取消發佈）
+async function gcStaticPages(pat, posts, services) {
+	let deleted = 0;
+	try {
+		const published = new Set((posts || []).filter(isPublished).map(p => String(getCombinedId(p)) + '.html'));
+		const dir = await ghListDir(pat, JSON_REPO, 'ghoststory/article');
+		for (const f of dir) {
+			if (!/^\d+_\d{14}\.html$/.test(f.name)) continue;
+			if (!published.has(f.name)) { await ghDeleteFile(pat, JSON_REPO, `ghoststory/article/${f.name}`, f.sha, `GC stale static page (${f.name})`); deleted++; }
+		}
+	} catch (e) { console.warn('GC 文章靜態頁失敗:', e); }
+	try {
+		const published = new Set((services || []).map(s => String(s['ID'] ?? s['標題'] ?? '') + '.html'));
+		const dir = await ghListDir(pat, JSON_REPO, 'services/compendium');
+		for (const f of dir) {
+			if (!/^(Ability|Vision|Compendium)_\d{3}\.html$/.test(f.name)) continue;
+			if (!published.has(f.name)) { await ghDeleteFile(pat, JSON_REPO, `services/compendium/${f.name}`, f.sha, `GC stale service page (${f.name})`); deleted++; }
+		}
+	} catch (e) { console.warn('GC 彙典靜態頁失敗:', e); }
+	return deleted;
+}
+
+// 只重建有變更的靜態頁；forceAll=true 時全部重產（仍會跳過內容一致的檔案）
+async function syncStaticPages(pat, posts, services, changePostIds, changeSvcIds, forceAll) {
+	let written = 0, skipped = 0;
+	for (const p of (posts || [])) {
+		const pid = String(p['PostID'] ?? '');
+		if (!forceAll && !changePostIds.has(pid)) continue;
+		const html = buildArticleHtml(p);
+		if (!html) continue;
+		const r = await ghWriteFileIfChanged(pat, JSON_REPO, `ghoststory/article/${getCombinedId(p)}.html`, html, `Sync static article ${pid}`);
+		if (r === 'written') written++; else skipped++;
+	}
+	for (const s of (services || [])) {
+		const sid = String(s['ID'] ?? s['標題'] ?? '');
+		if (!sid) continue;
+		if (!forceAll && !changeSvcIds.has(sid)) continue;
+		const html = buildCompendiumHtml(s);
+		if (!html) continue;
+		const r = await ghWriteFileIfChanged(pat, JSON_REPO, `services/compendium/${encodeURIComponent(sid)}.html`, html, `Sync static service ${sid}`);
+		if (r === 'written') written++; else skipped++;
+	}
+	const deleted = await gcStaticPages(pat, posts, services);
+	return { written, skipped, deleted };
+}
+
+// 驗證 saveAll 寫回的 JSON 是否合理（避免把壞掉的 JSON 推上去）
+function validateJsonArray(arr, path) {
+	if (!Array.isArray(arr)) return [`${path} 內容不是陣列`];
+	const errs = [];
+	const ids = new Set();
+	for (let i = 0; i < arr.length; i++) {
+		const item = arr[i];
+		if (!item || typeof item !== 'object') { errs.push(`第 ${i + 1} 筆不是物件`); continue; }
+		const pid = item['PostID'] ?? item['ID'];
+		if (pid !== undefined && pid !== null) {
+			const key = String(pid);
+			if (ids.has(key)) errs.push(`ID 重複：${key}`);
+			ids.add(key);
+		}
+	}
+	return errs;
 }
 
 // buildSitemapXml 已移至 /Javascript/sitemap.js 共用
@@ -210,6 +323,9 @@ async function saveAll() {
 	if (!pendingOps.length) return;
 	setStatus('⏳ 儲存中...', 'blue');
 	try {
+		// 儲存前快照：用來判斷哪些文章/彙典是這次新增的
+		const prevPostIds = new Set((allPosts || []).map(p => String(p['PostID'] ?? '')));
+		const prevSvcIds = new Set((allSvc || []).map(s => String(s['ID'] ?? '')));
 		const pat = await ensurePat();
 		const files = [...new Set(pendingOps.map(o => o.file))];
 		let savedPosts = null;
@@ -249,12 +365,51 @@ async function saveAll() {
 				const sitemapXml = buildSitemapXml(postsForSitemap, servicesForSitemap);
 				await ghWriteFile(pat, JSON_REPO, 'sitemap.xml', sitemapXml, 'Admin save sitemap');
 			} catch (e) { console.warn('sitemap 更新失敗（不影響本體）:', e); }
+
+			// 增量重產靜態頁（只重建有變更的頁面，並清理被刪除的舊頁）
+			try {
+				const postsNow = savedPosts || allPosts;
+				const svcNow = savedServices || allSvc;
+
+				const changePostIds = new Set();
+				const changeSvcIds = new Set();
+				for (const o of pendingOps) {
+					if (o.file === 'posts' && o.match && o.match.PostID != null) changePostIds.add(String(o.match.PostID));
+					if (o.file === 'services' && o.match) {
+						if (o.match.ID !== undefined) changeSvcIds.add(String(o.match.ID));
+						else if (o.match.keyTitle !== undefined) {
+							const found = (svcNow || []).find(s => s && s['標題'] === o.match.keyTitle);
+							if (found && found['ID'] !== undefined) changeSvcIds.add(String(found['ID']));
+						}
+					}
+				}
+				for (const p of (postsNow || [])) if (!prevPostIds.has(String(p['PostID'] ?? ''))) changePostIds.add(String(p['PostID'] ?? ''));
+				for (const s of (svcNow || [])) if (!prevSvcIds.has(String(s['ID'] ?? ''))) changeSvcIds.add(String(s['ID'] ?? ''));
+
+				const result = await syncStaticPages(pat, postsNow, svcNow, changePostIds, changeSvcIds, false);
+				console.log(`靜態頁同步：寫入 ${result.written}、略過 ${result.skipped}、刪除 ${result.deleted}`);
+			} catch (e) { console.warn('靜態頁同步失敗（不影響本體）:', e); }
 		}
 		pendingOps = [];
 		updateSaveBar();
 		setStatus('✅ 已儲存，前台約 1~3 分鐘生效', 'green');
 	} catch (e) {
 		setStatus('❌ 儲存失敗：' + e.message + '（暫存保留，可重試）', 'red');
+	}
+}
+
+// 全部重產：重建所有文章/彙典靜態頁（比對後只寫入有差異的），並清理舊頁，回報結果
+async function rebuildAllStaticPages() {
+	setStatus('⏳ 重產靜態頁中（可能需要幾十秒）…', 'blue');
+	try {
+		const pat = await ensurePat();
+		const result = await syncStaticPages(pat, allPosts, allSvc, new Set(), new Set(), true);
+		const msg = `✅ 重產完成：寫入 ${result.written} 頁、略過 ${result.skipped} 頁、刪除舊頁 ${result.deleted} 頁`;
+		setStatus(msg, 'green');
+		logOp('重產靜態頁', `${result.written} 寫入 / ${result.skipped} 略過 / ${result.deleted} 刪除`);
+	} catch (e) {
+		console.warn('重產靜態頁失敗:', e);
+		setStatus('❌ 重產靜態頁失敗：' + (e?.message || e), 'red');
 	}
 }
 
@@ -1140,6 +1295,7 @@ export async function initAdmin(sess) {
 	$('loginsUser').onchange = loadLogins;
 	$('loginsEvent').onchange = loadLogins;
 	$('syncPostsBtn').onclick = rebuildVersion;
+	$('rebuildPagesBtn').onclick = rebuildAllStaticPages;
 	$('saveAllBtn').onclick = saveAll;
 	$('discardBtn').onclick = discardAll;
 	window.addEventListener('beforeunload', (e) => {

@@ -230,7 +230,7 @@
         const title = String(post["標題"] || '鬼磕頭日誌');
         const plain = String(post["貼文內容"] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
         const desc = (plain.length > 150 ? plain.slice(0, 150) + '…' : plain) || '穿梭陰陽，紀錄最真實的靈界對話。';
-        const pageUrl = 'https://spiritref.github.io/ghoststory/article/?id=' + encodeURIComponent(targetId);
+        const pageUrl = 'https://spiritref.github.io/ghoststory/article/' + encodeURIComponent(targetId) + '.html';
         const imgData = String(post["圖片網址"] || post["圖片"] || '');
         const firstImg = imgData.split(/\r?\n|\|/).map(s => s.trim()).find(Boolean);
         const imgUrl = firstImg ? (firstImg.startsWith('http') ? firstImg : 'https://spiritref.github.io/ghoststory/' + firstImg) : 'https://spiritref.github.io/GhostKowtow.jpg';

@@ -105,7 +105,7 @@
             const title = String(item['標題'] || '超自然現象彙典');
             const plain = String(item['貼文內容'] || item['內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
             const desc = (plain.length > 150 ? plain.slice(0, 150) + '…' : plain) || '超自然現象彙典彙整各種真實靈界紀實案例。';
-            const pageUrl = 'https://spiritref.github.io/services/compendium/detail.html?id=' + encodeURIComponent(idParam);
+            const pageUrl = 'https://spiritref.github.io/services/compendium/' + encodeURIComponent(idParam) + '.html';
             const imgUrl = 'https://spiritref.github.io/GhostKowtow.jpg';
 
             upsertMeta('name', 'description', desc);

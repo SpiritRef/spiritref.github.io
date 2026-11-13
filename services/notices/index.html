@@ -256,7 +256,7 @@
 		document.getElementById('list-content').innerHTML = pagedData.map(i => {
 			const dateStr = i["發佈日期"] ? new Date(i["發佈日期"]).toLocaleDateString() : "近期";
 			const pin = i["置頂"] === true ? "📌" : "";
-			const artUrl = '/ghoststory/article/?id=' + encodeURIComponent(Global.getCombinedId(i)) + '&from=notices';
+			const artUrl = '/ghoststory/article/' + Global.getCombinedId(i) + '.html?from=notices';
 			const imgRaw = i["圖片網址"] || i["圖片"] || "";
 			let imgHtml = "";
 			if (typeof imgRaw === 'string' && imgRaw.trim() !== "") {

@@ -67,7 +67,7 @@ foreach ($post in $data) {
     $lastmod = if ($dateObj) { $dateObj.ToString("yyyy-MM-dd") } else { $today }
     if ($dateObj) { $ts = $dateObj.ToString("yyyyMMddHHmmss") }
     $combined = "${postId}_${ts}"
-    $url = "$base/ghoststory/article/?id=$combined"
+    $url = "$base/ghoststory/article/$combined.html"
     $entry = @{ loc=$url; lastmod=$lastmod }
     $entries += $entry
 }
@@ -89,7 +89,7 @@ if (Test-Path $svcPath) {
         $compendiumId = if ($id) { $id } else { $title }
         if (-not $compendiumId) { continue }
         $encoded = [System.Uri]::EscapeDataString($compendiumId)
-        $url = "$base/services/compendium/detail.html?id=$encoded"
+        $url = "$base/services/compendium/$encoded.html"
         # 從 Services.json 的發佈日期取 lastmod（沒有就用今天）
         $dateObj = $null
         foreach ($pr in $props) {
