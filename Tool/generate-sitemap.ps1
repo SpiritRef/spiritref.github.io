@@ -15,6 +15,17 @@ if (-not (Test-Path $jsonPath)) {
 
 $data = Get-Content -Raw -Encoding UTF8 $jsonPath | ConvertFrom-Json
 
+function ConvertTo-DateTimeValue($v) {
+    if ($v -is [int] -or $v -is [long] -or $v -is [double]) {
+        try { return [DateTime]::FromOADate([double]$v) } catch { return $null }
+    }
+    $s = [string]$v
+    if ($s -notmatch '^\d{4}[/-]\d{2}[/-]\d{2}') { return $null }
+    try { return [DateTime]::ParseExact($s, "yyyy/MM/dd HH:mm:ss", [System.Globalization.CultureInfo]::InvariantCulture) } catch { }
+    try { return [DateTime]::Parse($s) } catch { }
+    return $null
+}
+
 $base = "https://spiritref.github.io"
 $today = (Get-Date).ToString("yyyy-MM-dd")
 
@@ -22,12 +33,12 @@ $entries = @()
 
 # Static public pages
 $static = @(
-    @{ loc="$base/services/"; lastmod=$today; changefreq="weekly"; priority="1.0" },
-    @{ loc="$base/services/compendium/"; lastmod=$today; changefreq="weekly"; priority="0.8" },
-    @{ loc="$base/services/notices/"; lastmod=$today; changefreq="daily"; priority="0.8" },
-    @{ loc="$base/services/consult.html"; lastmod=$today; changefreq="monthly"; priority="0.5" },
-    @{ loc="$base/ghoststory/"; lastmod=$today; changefreq="daily"; priority="0.9" },
-    @{ loc="$base/"; lastmod=$today; changefreq="weekly"; priority="0.8" }
+    @{ loc="$base/services/"; lastmod=$today },
+    @{ loc="$base/services/compendium/"; lastmod=$today },
+    @{ loc="$base/services/notices/"; lastmod=$today },
+    @{ loc="$base/services/consult.html"; lastmod=$today },
+    @{ loc="$base/ghoststory/"; lastmod=$today },
+    @{ loc="$base/"; lastmod=$today }
 )
 foreach ($s in $static) { $entries += $s }
 
@@ -38,31 +49,26 @@ foreach ($post in $data) {
     if (-not $postId) { $postId = "0" }
     $raw = $null
     foreach ($pr in $props) {
-        if ($pr.Value -is [string] -and $pr.Value -match '^\d{4}/\d{2}/\d{2}') {
+        if ($pr.Value -is [string] -and $pr.Value -match '^\d{4}[/-]\d{2}[/-]\d{2}') {
             $raw = $pr.Value
             break
         }
-    }
-    $ts = "0000"
-    $lastmod = $today
-    if ($raw) {
-        try {
-            $d = [DateTime]::ParseExact($raw, "yyyy/MM/dd HH:mm:ss", [System.Globalization.CultureInfo]::InvariantCulture)
-            $ts = $d.ToString("yyyyMMddHHmmss")
-            $lastmod = $d.ToString("yyyy-MM-dd")
-        } catch {
-            try {
-                $d = [DateTime]::Parse($raw)
-                $ts = $d.ToString("yyyyMMddHHmmss")
-                $lastmod = $d.ToString("yyyy-MM-dd")
-            } catch {
-                $null = $_
+        if ($pr.Value -is [int] -or $pr.Value -is [long] -or $pr.Value -is [double]) {
+            if ([double]$pr.Value -gt 40000 -and [double]$pr.Value -lt 60000) {
+                $raw = $pr.Value
+                break
             }
         }
     }
+    $ts = "0000"
+    $dateObj = if ($raw) { ConvertTo-DateTimeValue $raw } else { $null }
+    # 未發佈（未來日期）的文章先不收進 sitemap，避免被 Google 當成軟 404
+    if ($dateObj -and $dateObj -gt (Get-Date)) { continue }
+    $lastmod = if ($dateObj) { $dateObj.ToString("yyyy-MM-dd") } else { $today }
+    if ($dateObj) { $ts = $dateObj.ToString("yyyyMMddHHmmss") }
     $combined = "${postId}_${ts}"
     $url = "$base/ghoststory/article/?id=$combined"
-    $entry = @{ loc=$url; lastmod=$lastmod; changefreq="monthly"; priority="0.6" }
+    $entry = @{ loc=$url; lastmod=$lastmod }
     $entries += $entry
 }
 
@@ -84,7 +90,8 @@ if (Test-Path $svcPath) {
         if (-not $compendiumId) { continue }
         $encoded = [System.Uri]::EscapeDataString($compendiumId)
         $url = "$base/services/compendium/detail.html?id=$encoded"
-        $entry = @{ loc=$url; lastmod=$today; changefreq="monthly"; priority="0.7" }
+        # Services.json 沒有發佈日期欄位，無法給出真實 lastmod，寧可省略也不要亂放
+        $entry = @{ loc=$url }
         $entries += $entry
     }
 }
@@ -96,9 +103,7 @@ $sb = New-Object System.Text.StringBuilder
 foreach ($e in $entries) {
     [void]$sb.AppendLine('  <url>')
     [void]$sb.AppendLine("    <loc>$($e.loc)</loc>")
-    [void]$sb.AppendLine("    <lastmod>$($e.lastmod)</lastmod>")
-    [void]$sb.AppendLine("    <changefreq>$($e.changefreq)</changefreq>")
-    [void]$sb.AppendLine("    <priority>$($e.priority)</priority>")
+    if ($e.lastmod) { [void]$sb.AppendLine("    <lastmod>$($e.lastmod)</lastmod>") }
     [void]$sb.AppendLine('  </url>')
 }
 [void]$sb.AppendLine('</urlset>')

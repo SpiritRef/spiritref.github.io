@@ -77,6 +77,7 @@
         const itemDate = (typeof rawDate === 'number') ? new Date((rawDate - 25569) * 86400 * 1000) : new Date(String(rawDate || '').replace(/\\/g, '-').replace(/\//g, '-').replace(' ', 'T'));
         if (rawDate && !isNaN(itemDate.getTime()) && itemDate.getTime() > Date.now()) {
             document.title = '尚未發佈 | 超自然現象彙典';
+            upsertMeta('name', 'robots', 'noindex,follow');
             container.innerHTML = '<div class="notice-item"><p>此內容尚未發佈，請於預定時間後再查看。</p></div>';
             return;
         }
@@ -84,6 +85,39 @@
             if (text == null) return '';
             const escaped = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return escaped.replace(/(https?:\/\/[^\\s<]+)/g, (url) => '<a href="' + url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer">' + url + '</a>');
+        }
+        // ==== SEO：動態 meta / canonical ====
+        function upsertMeta(attr, key, value) {
+            let el = document.head.querySelector('meta[' + attr + '="' + key + '"]');
+            if (!el) {
+                el = document.createElement('meta');
+                el.setAttribute(attr, key);
+                document.head.appendChild(el);
+            }
+            el.setAttribute('content', value);
+        }
+        function upsertCanonical(href) {
+            let el = document.head.querySelector('link[rel="canonical"]');
+            if (!el) { el = document.createElement('link'); el.rel = 'canonical'; document.head.appendChild(el); }
+            el.href = href;
+        }
+        function updateItemMeta(item, idParam) {
+            const title = String(item['標題'] || '超自然現象彙典');
+            const plain = String(item['貼文內容'] || item['內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            const desc = (plain.length > 150 ? plain.slice(0, 150) + '…' : plain) || '超自然現象彙典彙整各種真實靈界紀實案例。';
+            const pageUrl = 'https://spiritref.github.io/services/compendium/detail.html?id=' + encodeURIComponent(idParam);
+            const imgUrl = 'https://spiritref.github.io/GhostKowtow.jpg';
+
+            upsertMeta('name', 'description', desc);
+            upsertMeta('name', 'twitter:title', title + ' | 超自然現象彙典');
+            upsertMeta('name', 'twitter:description', desc);
+            upsertMeta('name', 'twitter:image', imgUrl);
+            upsertMeta('property', 'og:title', title + ' | 超自然現象彙典');
+            upsertMeta('property', 'og:description', desc);
+            upsertMeta('property', 'og:url', pageUrl);
+            upsertMeta('property', 'og:type', 'article');
+            upsertMeta('property', 'og:image', imgUrl);
+            upsertCanonical(pageUrl);
         }
         const q = item['標題'] || '';
         const a = linkify(item['貼文內容'] || item['內容'] || '暫無內容');
@@ -110,6 +144,7 @@
             })()
             : '';
         document.title = q + ' | 超自然現象彙典';
+        updateItemMeta(item, id);
         container.innerHTML = '<h1 class="detail-title" style="margin-top:12px;">' + q + '</h1>'
             + '<div class="notice-item">'
             + '<div class="compendium-a"><div class="compendium-answer-text">' + a + '</div>' + linksHtml + '</div>'

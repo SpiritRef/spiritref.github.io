@@ -210,6 +210,42 @@
         if (isNaN(d.getTime())) return true;
         return d.getTime() <= Date.now();
     }
+
+    // ==== SEO：動態 meta / canonical ====
+    function upsertMeta(attr, key, value) {
+        let el = document.head.querySelector('meta[' + attr + '="' + key + '"]');
+        if (!el) {
+            el = document.createElement('meta');
+            el.setAttribute(attr, key);
+            document.head.appendChild(el);
+        }
+        el.setAttribute('content', value);
+    }
+    function upsertCanonical(href) {
+        let el = document.head.querySelector('link[rel="canonical"]');
+        if (!el) { el = document.createElement('link'); el.rel = 'canonical'; document.head.appendChild(el); }
+        el.href = href;
+    }
+    function updateArticleMeta(post, targetId) {
+        const title = String(post["標題"] || '鬼磕頭日誌');
+        const plain = String(post["貼文內容"] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        const desc = (plain.length > 150 ? plain.slice(0, 150) + '…' : plain) || '穿梭陰陽，紀錄最真實的靈界對話。';
+        const pageUrl = 'https://spiritref.github.io/ghoststory/article/?id=' + encodeURIComponent(targetId);
+        const imgData = String(post["圖片網址"] || post["圖片"] || '');
+        const firstImg = imgData.split(/\r?\n|\|/).map(s => s.trim()).find(Boolean);
+        const imgUrl = firstImg ? (firstImg.startsWith('http') ? firstImg : 'https://spiritref.github.io/ghoststory/' + firstImg) : 'https://spiritref.github.io/GhostKowtow.jpg';
+
+        upsertMeta('name', 'description', desc);
+        upsertMeta('name', 'twitter:title', title + ' | 鬼磕頭日誌');
+        upsertMeta('name', 'twitter:description', desc);
+        upsertMeta('name', 'twitter:image', imgUrl);
+        upsertMeta('property', 'og:title', title + ' | 鬼磕頭日誌');
+        upsertMeta('property', 'og:description', desc);
+        upsertMeta('property', 'og:url', pageUrl);
+        upsertMeta('property', 'og:type', 'article');
+        upsertMeta('property', 'og:image', imgUrl);
+        upsertCanonical(pageUrl);
+    }
     function renderPost(data, id) {
         const post = data.find(p => getCombinedId(p) === id);
         if (!post) {
@@ -217,6 +253,7 @@
         }
         if (!isPublishedPost(post)) {
             document.title = "尚未發佈 | 鬼磕頭日誌";
+            upsertMeta('name', 'robots', 'noindex,follow');
             document.getElementById('art-title').innerText = "此內容尚未發佈";
             document.getElementById('art-body').innerText = "此文章將於預定時間公開，請稍後再來。";
             return true;
@@ -228,6 +265,7 @@
             }
 
             document.title = `${post["標題"]} | 鬼磕頭日誌`;
+            updateArticleMeta(post, id);
             document.getElementById('art-title').innerText = post["標題"];
             document.getElementById('art-date').innerText = formatDate(post["發佈日期"]);
             document.getElementById('art-body').innerHTML = linkify(post["貼文內容"]);
