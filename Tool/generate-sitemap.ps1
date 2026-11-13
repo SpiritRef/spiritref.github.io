@@ -45,7 +45,16 @@ foreach ($s in $static) { $entries += $s }
 # Article pages (compute combined ID from postFB.json)
 foreach ($post in $data) {
     $props = @($post.PSObject.Properties)
-    $postId = [string]$props[0].Value
+    # PostID 明確從屬性讀取，不靠屬性順序（inputData 建立的文章屬性順序是 發佈日期 在前）
+    $postId = $null
+    if ($post.PSObject.Properties.Name -contains 'PostID') {
+        $postId = [string]$post.PostID
+    } else {
+        # 相容舊資料：找名為 PostID 的屬性
+        foreach ($pr in $props) {
+            if ($pr.Name -eq 'PostID') { $postId = [string]$pr.Value; break }
+        }
+    }
     if (-not $postId) { $postId = "0" }
     $raw = $null
     foreach ($pr in $props) {
