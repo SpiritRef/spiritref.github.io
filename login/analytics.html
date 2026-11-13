@@ -22,16 +22,6 @@
 		.menu-toggle { display: none; position: fixed; top: 14px; left: 14px; z-index: 70; width: 44px; height: 44px; border: none; border-radius: 8px; background: rgba(255,255,255,0.95); color: #4a2e1b; box-shadow: 0 2px 8px rgba(0,0,0,0.25); cursor: pointer; font-size: 22px; line-height:1; align-items: center; justify-content: center; }
 		.menu-toggle:hover { background: #fff; }
 		#menuOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
-
-		@media (max-width: 900px) {
-			.sidebar { width: 240px; transform: translateX(-100%); box-shadow: 4px 0 12px rgba(0,0,0,0.15); }
-			/* 手機版內容區固定 500px 寬：圖表/地圖較大，可往右滑看完整內容 */
-			.main-content { margin-left: 0; padding: 64px 16px 24px; min-width: 500px; overflow-x: visible; box-sizing: border-box; }
-			.menu-toggle { display: flex; }
-			.analytics-layout.menu-open .sidebar { transform: translateX(0); }
-			.analytics-layout.menu-open #menuOverlay { display: block; }
-			.grid-2 { grid-template-columns: 1fr; grid-template-areas: "trend" "geo" "pages"; }
-		}
 		.sidebar { background: linear-gradient(180deg, #f7ebd7 0%, #e6d3af 100%); border-right: 1px solid #dcbfa2; padding: 20px 10px; display:flex; flex-direction:column; gap:8px; }
 		.sidebar h1 { font-size: 16px; color: #4a2e1b; margin: 0 0 10px 4px; }
 		.sidebar-btn { display: block; width: 100%; text-align: left; padding: 10px 12px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: bold; color: #5c4332; margin-bottom: 2px; transition: all 0.2s; }
@@ -104,6 +94,17 @@
 		.back-admin .sidebar-btn:hover { background: rgba(139, 115, 85, 0.1); }
 		.back-admin .logout { color:#b04a3a; }
 		.back-admin .logout:hover { background: rgba(176, 74, 58, 0.1); }
+
+		/* 手機版響應式（需在基底規則之後，利用 cascade 覆蓋） */
+		@media (max-width: 900px) {
+			.sidebar { width: 240px; transform: translateX(-100%); box-shadow: 4px 0 12px rgba(0,0,0,0.15); }
+			/* 手機版內容區固定 500px 寬：圖表/地圖較大，可往右滑看完整內容 */
+			.main-content { margin-left: 0; padding: 64px 16px 24px; min-width: 500px; overflow-x: visible; box-sizing: border-box; }
+			.menu-toggle { display: flex; }
+			.analytics-layout.menu-open .sidebar { transform: translateX(0); }
+			.analytics-layout.menu-open #menuOverlay { display: block; }
+			.grid-2 { grid-template-columns: 1fr; grid-template-areas: "trend" "geo" "pages"; }
+		}
 	</style>
 </head>
 <body>
