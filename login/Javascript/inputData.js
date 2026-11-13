@@ -297,6 +297,35 @@ window.sendData = async function() {
 			if (smResult !== 'ok') throw new Error('sitemap 寫入失敗: ' + smResult);
 		} catch (se) { console.warn("sitemap 更新失敗（不影響本文）:", se); }
 
+		// 產生新文章的靜態頁（與後台前台同步，讓 LINE/Google 直接看到內容）
+		try {
+			const newPost = arr[arr.length - 1]; // 剛附加的文章
+			if (newPost) {
+				const { buildArticleHtml, getCombinedId } = await import('/Javascript/buildArticle.js');
+				const html = buildArticleHtml(newPost);
+				if (html) {
+					const staticPath = 'ghoststory/article/' + getCombinedId(newPost) + '.html';
+					const staticApi = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${staticPath}`;
+					const g2 = await fetch(staticApi, { headers: ghHeaders(pat) });
+					let sha = null;
+					let changed = true;
+					if (g2.ok) {
+						const j2 = await g2.json();
+						sha = j2.sha;
+						try { if (fromBase64Utf8(j2.content) === html) changed = false; } catch (e) { /* 解碼失敗寫入 */ }
+					} else if (g2.status !== 404) {
+						throw new Error('讀取靜態頁失敗: HTTP ' + g2.status);
+					}
+					if (changed) {
+						const body = { message: `Sync static page (post ${newPost.PostID})`, content: toBase64Utf8(html) };
+						if (sha) body.sha = sha;
+						const p2 = await fetch(staticApi, { method: 'PUT', headers: ghHeaders(pat), body: JSON.stringify(body) });
+						if (!p2.ok) throw new Error('靜態頁寫入失敗: HTTP ' + p2.status);
+					}
+				}
+			}
+		} catch (se) { console.warn("靜態頁產生失敗（不影響發佈）:", se); }
+
 		status.innerText = "✅ 已發佈！前台約 1~3 分鐘生效。";
 		status.style.color = "green";
 
