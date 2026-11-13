@@ -255,6 +255,8 @@ window.sendData = async function() {
 	status.innerText = "🚀 正在寫入 GitHub...";
 	status.style.color = "blue";
 
+	let publishedPost = null;
+
 	try {
 		for (let attempt = 0; attempt < 2; attempt++) {
 			const { sha, data } = await ghRead(pat, JSON_REPO, JSON_PATH);
@@ -274,6 +276,7 @@ window.sendData = async function() {
 				"貼文內容": content,
 				"圖片網址": picVal || null
 			});
+			publishedPost = arr[arr.length - 1];
 			const result = await ghWrite(pat, JSON_REPO, JSON_PATH, arr, `Post: ${title}`, sha);
 			if (result === 'ok') break;
 			if (attempt === 1) throw new Error("連續衝突，請稍後再試");
@@ -319,7 +322,7 @@ window.sendData = async function() {
 
 		// 產生新文章的靜態頁（與後台前台同步，讓 LINE/Google 直接看到內容）
 		try {
-			const newPost = arr[arr.length - 1]; // 剛附加的文章
+			const newPost = publishedPost; // 剛附加的文章
 			if (newPost) {
 				const { buildArticleHtml, getCombinedId } = await import('/Javascript/buildArticle.js');
 				const html = buildArticleHtml(newPost);
@@ -346,7 +349,7 @@ window.sendData = async function() {
 			}
 		} catch (se) { console.warn("靜態頁產生失敗（不影響發佈）:", se); }
 
-		logOp(session, '新增文章', `${arr[arr.length - 1]?.PostID ?? ''} ${title}`);
+		logOp(session, '新增文章', `${publishedPost?.PostID ?? ''} ${title}`);
 
 		status.innerText = "✅ 已發佈！前台約 1~3 分鐘生效。";
 		status.style.color = "green";
