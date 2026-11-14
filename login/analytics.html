@@ -82,6 +82,8 @@
 		.visitor-event:last-child { border-bottom:none; }
 		.ev-link { color:#8b7355; font-weight:bold; text-decoration:none; word-break:break-all; }
 		.ev-link:hover { text-decoration:underline; }
+		.id-note { font-size:11px; color:#b0a08d; margin-left:6px; white-space:nowrap; }
+		.excerpt { font-size:12px; color:#5c4332; margin-top:4px; max-width:520px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 		.from-tag { background:#b04a3a; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; }
 		.visitor-meta { padding:2px 2px 8px; border-bottom:1px dashed #eee; margin-bottom:8px; font-size:12px; color:#8b7355; display:flex; gap:14px; flex-wrap:wrap; }
 		.path-tag { background:#8b7355; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; }
@@ -366,8 +368,8 @@
 		const raw = url || '/';
 		const path = raw.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
 		const q = parseQuery(raw);
-		const articleId = articleIdFromUrl(raw);
-		if (articleId) return `/ghoststory/article/${encodeURIComponent(articleId)}.html`;
+		const articlePath = articlePagePath(raw);
+		if (articlePath) return articlePath;
 		if (path.startsWith('/services/ability/')) return path;
 		if (path.startsWith('/services/vision/')) return path;
 		if (path.startsWith('/services/compendium/detail.html') && q.id) return `/services/compendium/${encodeURIComponent(q.id)}.html`;
@@ -376,17 +378,31 @@
 		return path;
 	}
 
+	function stripHtml(raw) {
+		return String(raw ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+	}
+
+	function excerpt(text, maxLen) {
+		const t = stripHtml(text);
+		if (!t) return '';
+		return t.length > maxLen ? t.slice(0, maxLen).trim() + '…' : t;
+	}
+
 	function breakdownNameHtml(key) {
 		const [path, qs] = key.split('?');
 		const q = parseQuery('?' + (qs || ''));
-		const idNote = (id) => ` <span style="font-size:11px;color:#b0a08d;">${esc(id)}</span>`;
+		const idNote = (id) => `<span class="id-note">${esc(id)}</span>`;
+		const preview = (html) => {
+			const ex = excerpt(html, 70);
+			return ex ? `<div class="excerpt">${esc(ex)}</div>` : '';
+		};
 
 		const articleId = articleIdFromUrl(key);
 		if (articleId) {
 			const p = postsMapCache.get(String(articleId)) || {};
 			const title = p['標題'] || `PostID ${articleId}`;
 			const link = articlePagePath(key) || `/ghoststory/article/${encodeURIComponent(articleId)}.html`;
-			return pageLink(link, `日誌文章：${esc(title)}`) + idNote(articleId);
+			return `<a class="ev-link" href="${esc(link)}" target="_blank" rel="noopener">日誌文章：${esc(title)}</a> ${idNote(articleId)}${preview(p['貼文內容'])}`;
 		}
 
 		if (/(^|\/)(Ability|Vision|Compendium)_\d{3}\.html$/.test(path)) {
@@ -394,10 +410,11 @@
 			const s = servicesMapCache.get(String(id)) || {};
 			const title = s['標題'] || `ID ${id}`;
 			const label = id.startsWith('Ability_') ? '服務內容' : id.startsWith('Vision_') ? '視覺紀錄' : '彙典';
-			return pageLink(`/${path.replace(/^\//, '')}`, `${label}：${esc(title)}`) + idNote(id);
+			const rel = `/${path.replace(/^\//, '')}`;
+			return `<a class="ev-link" href="${esc(rel)}" target="_blank" rel="noopener">${label}：${esc(title)}</a> ${idNote(id)}${preview(s['貼文內容'] || s['內容'])}`;
 		}
 
-		return pageLink(key, esc(simplifyPage(key)));
+		return `<a class="ev-link" href="${esc(key)}" target="_blank" rel="noopener">${esc(simplifyPage(key))}</a>`;
 	}
 
 	// 點柱狀圖後：顯示該分類每個頁面的明細（瀏覽/累積/平均/最長）
