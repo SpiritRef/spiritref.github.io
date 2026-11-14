@@ -1,4 +1,4 @@
-import { getIni, getRemoteVersion, getCombinedId, formatDate } from '/Javascript/global.js?v=20261031';
+import { getIni, getRemoteVersion, getCombinedId, formatDate, clearFrontendCache } from '/Javascript/global.js?v=20261031';
 
 let allPosts = [];
 let filteredPosts = [];
@@ -20,6 +20,10 @@ let favorites = JSON.parse(localStorage.getItem('novel_favs')) || [];
 let showOnlyFavs = false;
 
 let JsonData = "";
+
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) refreshFromVersion();
+});
 
 /**
  * 1. 系統初始化
@@ -128,6 +132,8 @@ async function refreshFromVersion() {
     try {
         if (localStorage.getItem('data_ver') === remoteVer && allPosts.length > 0) return;
     } catch (e) {}
+    clearFrontendCache();
+    const hadPosts = allPosts.length > 0;
     if (!JsonData) return;
     if (await fetchStaticJson(JsonData)) {
         try {

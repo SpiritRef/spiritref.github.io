@@ -1,6 +1,6 @@
 import { getIni, getCombinedId } from '/Javascript/global.js?v=20261212';
 import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261212';
-import { buildArticleHtml, buildCompendiumHtml, isPublished } from '/Javascript/buildArticle.js?v=20261212';
+import { buildArticleHtml, buildCompendiumHtml, isPublished, serviceDetailPath } from '/Javascript/buildArticle.js?v=20261212';
 import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261212';
 import { getSupabase } from './adminAuth.js?v=20261212';
 
@@ -16,6 +16,7 @@ let jsonPostsPath = 'Data/postFB.json';
 let jsonSvcPath = '';
 let allPosts = [];
 let allSvc = [];
+let allSvcFull = []; // 不論目前停留在哪個服務分類，同步／GC 都用完整清單
 let allNotices = [];
 let editing = null; // {kind:'post'|'svc'|'notice'}
 let postPage = 1;
@@ -186,12 +187,14 @@ async function gcStaticPages(pat, posts, services) {
 	} catch (e) { console.warn('GC 文章靜態頁失敗:', e); }
 	try {
 		const published = new Set((services || []).map(s => String(s['ID'] ?? s['標題'] ?? '') + '.html'));
-		const dir = await ghListDir(pat, JSON_REPO, 'services/compendium');
-		for (const f of dir) {
-			if (!/^(Ability|Vision|Compendium)_\d{3}\.html$/.test(f.name)) continue;
-			if (!published.has(f.name)) { await ghDeleteFile(pat, JSON_REPO, `services/compendium/${f.name}`, f.sha, `GC stale service page (${f.name})`); deleted++; }
+		for (const dir of ['services/compendium', 'services/ability', 'services/vision']) {
+			const files = await ghListDir(pat, JSON_REPO, dir);
+			for (const f of files) {
+				if (!/^(Ability|Vision|Compendium)_\d{3}\.html$/.test(f.name)) continue;
+				if (!published.has(f.name)) { await ghDeleteFile(pat, JSON_REPO, `${dir}/${f.name}`, f.sha, `GC stale service page (${f.name})`); deleted++; }
+			}
 		}
-	} catch (e) { console.warn('GC 彙典靜態頁失敗:', e); }
+	} catch (e) { console.warn('GC 服務靜態頁失敗:', e); }
 	return deleted;
 }
 
@@ -212,7 +215,8 @@ async function syncStaticPages(pat, posts, services, changePostIds, changeSvcIds
 		if (!forceAll && !changeSvcIds.has(sid)) continue;
 		const html = buildCompendiumHtml(s);
 		if (!html) continue;
-		const r = await ghWriteFileIfChanged(pat, JSON_REPO, `services/compendium/${encodeURIComponent(sid)}.html`, html, `Sync static service ${sid}`);
+		const detailPath = serviceDetailPath(sid);
+		const r = await ghWriteFileIfChanged(pat, JSON_REPO, detailPath, html, `Sync static service ${sid}`);
 		if (r === 'written') written++; else skipped++;
 	}
 	const deleted = await gcStaticPages(pat, posts, services);
@@ -347,9 +351,10 @@ async function saveAll() {
 				} catch (e) {}
 			} else {
 				savedServices = next;
+				allSvcFull = savedServices;
 				try {
 					const cat = svcCat;
-					allSvc = next.filter(i => String(i['分類'] || '') === cat);
+					allSvc = savedServices.filter(i => String(i['分類'] || '') === cat);
 					renderSvcRows();
 				} catch (e) {}
 			}
@@ -369,7 +374,13 @@ async function saveAll() {
 			// 增量重產靜態頁（只重建有變更的頁面，並清理被刪除的舊頁）
 			try {
 				const postsNow = savedPosts || allPosts;
-				const svcNow = savedServices || allSvc;
+				let svcNow = savedServices || allSvcFull;
+				if (!svcNow || svcNow.length === 0) {
+					try { svcNow = await fetchJson('/' + jsonSvcPath); } catch (e) { svcNow = allSvcFull || allSvc; }
+				} else {
+					// 保底：一定用完整清單，避免過濾後分類影響 GC
+					try { const full = await fetchJson('/' + jsonSvcPath); if (Array.isArray(full) && full.length) svcNow = full; } catch (e) {}
+				}
 
 				const changePostIds = new Set();
 				const changeSvcIds = new Set();
@@ -403,7 +414,8 @@ async function rebuildAllStaticPages() {
 	setStatus('⏳ 重產靜態頁中（可能需要幾十秒）…', 'blue');
 	try {
 		const pat = await ensurePat();
-		const result = await syncStaticPages(pat, allPosts, allSvc, new Set(), new Set(), true);
+		const fullSvc = (jsonSvcPath ? await fetchJson('/' + jsonSvcPath).catch(() => allSvcFull) : allSvcFull) || allSvcFull || allSvc;
+		const result = await syncStaticPages(pat, allPosts, fullSvc, new Set(), new Set(), true);
 		const msg = `✅ 重產完成：寫入 ${result.written} 頁、略過 ${result.skipped} 頁、刪除舊頁 ${result.deleted} 頁`;
 		setStatus(msg, 'green');
 		logOp('重產靜態頁', `${result.written} 寫入 / ${result.skipped} 略過 / ${result.deleted} 刪除`);
@@ -853,6 +865,7 @@ async function loadSvc() {
 		} else {
 			if (!jsonSvcPath) throw new Error('INI 缺少 JsonService');
 			const d = await fetchJson('/' + jsonSvcPath);
+			allSvcFull = d.slice();
 			allSvc = d.filter(i => String(i['分類'] || '') === cat);
 		}
 	} catch (e) {
@@ -886,8 +899,8 @@ function renderSvcRows() {
 		const idx = allSvc.indexOf(it);
 		const cat = svcCat;
 		let lookhtml = '';
-		if (cat === '超自然現象彙典') {
-			const artUrl = `../services/compendium/${esc(encodeURIComponent(String(it['ID'] ?? idx + 1)))}.html`;
+		if (['專業服務', '視覺紀錄', '超自然現象彙典'].includes(cat)) {
+			const artUrl = `../${serviceDetailPath(String(it['ID'] ?? idx + 1))}`;
 			lookhtml = `
 				<a class="rowbtn" style="text-decoration:none;" href="${artUrl}" target="_blank">👁查看</a>
 				<button class="rowbtn" data-sact="copy" data-url="${artUrl}">複製網址</button>

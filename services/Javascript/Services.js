@@ -1,5 +1,7 @@
 import * as Global from '/Javascript/global.js?v=20261011';
 
+window.addEventListener('pageshow', (e) => { if (e.persisted) refreshFromVersion(); });
+
 let JsonDataPath = "";
 let JsonServicePath = "";
 const iniPath = '/settings/global.ini';
@@ -136,6 +138,7 @@ async function refreshFromVersion() {
         const hasData = allNotices.length > 0 || allServices.length > 0;
         if (localStorage.getItem('data_ver') === remoteVer && hasData) return;
     } catch (e) {}
+    Global.clearFrontendCache();
     const tasks = [];
     if (JsonDataPath) tasks.push(loadStaticData(JsonDataPath, 'notice'));
     if (JsonServicePath) tasks.push(loadStaticData(JsonServicePath, 'service'));

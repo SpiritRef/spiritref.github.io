@@ -199,6 +199,8 @@
         return false;
     }
 
+    window.addEventListener('pageshow', (e) => { if (e.persisted) refreshFromVersion(); });
+
     async function refreshFromVersion() {
         let remoteVer = null;
         try { remoteVer = await Global.getRemoteVersion(); } catch (e) {}
@@ -206,6 +208,7 @@
         try {
             if (localStorage.getItem('data_ver') === remoteVer && allCompendiums.length > 0) return;
         } catch (e) {}
+        Global.clearFrontendCache();
         if (!jsonServicePath) return;
         try {
             const sep = jsonServicePath.includes('?') ? '&' : '?';

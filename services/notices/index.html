@@ -213,6 +213,8 @@
 		}
 	}
 
+	window.addEventListener('pageshow', (e) => { if (e.persisted) refreshFromVersion(); });
+
 	async function refreshFromVersion() {
 		let remoteVer = null;
 		try {
@@ -222,6 +224,7 @@
 		try {
 			if (localStorage.getItem('data_ver') === remoteVer && allNotices.length > 0) return;
 		} catch (e) {}
+		Global.clearFrontendCache();
 		if (!JSON_PATH) return;
 		await fetchStaticJson();
 		try {

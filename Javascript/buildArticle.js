@@ -4,6 +4,17 @@
 
 export const SITE_BASE = 'https://spiritref.github.io';
 
+export function serviceDir(id) {
+	const s = String(id || '');
+	if (s.startsWith('Ability_')) return 'services/ability';
+	if (s.startsWith('Vision_')) return 'services/vision';
+	return 'services/compendium';
+}
+
+export function serviceDetailPath(id) {
+	return `${serviceDir(id)}/${encodeURIComponent(String(id))}.html`;
+}
+
 // ---- helpers（與 global.js 行為一致，需保持同步）----
 export function escapeHtml(s) {
 	return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -236,7 +247,7 @@ export function buildCompendiumHtml(item) {
 	const title = String(item['標題'] || '超自然現象彙典');
 	const raw = String(item['貼文內容'] || item['內容'] || '');
 	const desc = descOf(raw) || '超自然現象彙典彙整各種真實靈界紀實案例。';
-	const pageUrl = `${SITE_BASE}/services/compendium/${encodeURIComponent(id)}.html`;
+	const pageUrl = `${SITE_BASE}/${serviceDetailPath(id)}`;
 	const imgUrl = `${SITE_BASE}/GhostKowtow.jpg`;
 	const body = linkify(raw || '暫無內容');
 
@@ -266,12 +277,17 @@ export function buildCompendiumHtml(item) {
 		}
 	}
 
+	const back = id.startsWith('Ability_')
+		? { href: '/services/#services', text: '專業服務' }
+		: id.startsWith('Vision_')
+			? { href: '/services/#visual-records', text: '視覺紀錄' }
+			: { href: '/services/compendium/', text: '超自然現象彙典' };
+
 	return `<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${escapeHtml(title + ' | 超自然現象彙典')}</title>
+    <title>${escapeHtml(title + ' | 鬼磕頭')}</title>
     <meta name="description" content="${escapeHtml(desc)}">
     <link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
     <link rel="shortcut icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
@@ -318,7 +334,7 @@ export function buildCompendiumHtml(item) {
     </button>
 </div>
 <div class="list-container">
-    <a href="/services/compendium/" class="back-home" style="margin-bottom:12px;">&#x2190;&#xFE0E; 超自然現象彙典</a>
+    <a href="${escapeHtml(back.href)}" class="back-home" style="margin-bottom:12px;">&#x2190;&#xFE0E; ${escapeHtml(back.text)}</a>
     <h1 class="detail-title" style="margin-top:12px;">${escapeHtml(title)}</h1>
     <div class="notice-item">
         <div class="compendium-a"><div class="compendium-answer-text"><div>${body}</div>${linksHtml}</div></div>

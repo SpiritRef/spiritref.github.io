@@ -131,6 +131,10 @@ export async function getRemoteVersion() {
     } catch (e) { return null; }
 }
 
+export function clearFrontendCache() {
+    ['cached_novel_data', 'data_ver', 'cache_notices', 'cache_notices_v2', 'cache_services'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+}
+
 // ---------- 全站分析追蹤 ----------
 const ANALYTICS_FALLBACK_URL = 'https://ocqycgcatxdbpffpxdva.supabase.co';
 const ANALYTICS_FALLBACK_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jcXljZ2NhdHhkYnBmZnB4ZHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NjcxODksImV4cCI6MjEwNzA0MzE4OX0.ZmE5XI1LZdnZ3LagFDhcqaLqh-u3T8dtIFyBTHYzDOw';
