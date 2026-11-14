@@ -273,16 +273,59 @@
 		return out;
 	}
 
-	function simplifyPage(url) {
+	function articleIdFromUrl(url) {
+		if (!url) return null;
 		const path = url.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
+		const q = parseQuery(url);
+		if (path.startsWith('/ghoststory/article/') && q.id) {
+			const pid = String(q.id);
+			return pid.includes('_') ? pid.split('_')[0] : pid;
+		}
+		const last = path.split('/').pop();
+		const m = last && last.match(/^(\d+)_\d{14}\.html$/);
+		return m ? m[1] : null;
+	}
+
+	function articlePagePath(url) {
+		if (!url) return null;
+		const path = url.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
+		const q = parseQuery(url);
+		if (path.startsWith('/ghoststory/article/') && q.id) {
+			return `/ghoststory/article/${encodeURIComponent(String(q.id))}.html`;
+		}
+		const last = path.split('/').pop();
+		if (last && last.match(/^\d+_\d{14}\.html$/)) {
+			return `/ghoststory/article/${last}`;
+		}
+		const pid = articleIdFromUrl(url);
+		return pid ? `/ghoststory/article/${encodeURIComponent(pid)}.html` : null;
+	}
+
+	function simplifyPage(url) {
+		const raw = url || '/';
+		const path = raw.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
+		const q = parseQuery(raw);
+		const segs = path.split('/').filter(Boolean);
+
 		if (path === '/') return '首頁';
-		if (path.startsWith('/ghoststory/article/')) return '日誌文章';
+		if (path.startsWith('/ghoststory/article/')) {
+			const pid = articleIdFromUrl(raw);
+			const p = pid ? postsMapCache.get(String(pid)) : null;
+			const title = p ? String(p['標題'] || '') : '';
+			if (q.from === 'notices' || title.startsWith('【公告】')) return '公告';
+			return '日誌文章';
+		}
 		if (path === '/ghoststory/' || path === '/ghoststory') return '日誌首頁';
-		if (path.startsWith('/services/compendium/detail.html')) return '彙典';
-		if (path.startsWith('/services/compendium')) return '彙典首頁';
+		if (path.startsWith('/services/ability/')) return '服務內容';
+		if (path.startsWith('/services/vision/')) return '視覺紀錄';
+		if (path.startsWith('/services/compendium/detail.html') || path.startsWith('/services/compendium/')) return '彙典';
 		if (path.startsWith('/services/notices')) return '公告';
-		if (path === '/services/' || path === '/services') return '服務首頁';
 		if (path.startsWith('/services/consult')) return '諮詢表單';
+		if (path === '/services/' || path === '/services') return '服務首頁';
+
+		// 沒有定義的話，用上一層目錄名稱
+		if (segs.length >= 2) return segs[segs.length - 2];
+		if (segs.length === 1) return segs[0];
 		return path;
 	}
 
@@ -295,18 +338,24 @@
 		const q = parseQuery(url);
 		const fromNotice = q.from === 'notices';
 		const noticeTag = fromNotice ? ' <span class="from-tag">公告來源</span>' : '';
-
-		if (path.startsWith('/ghoststory/article/') && q.id) {
-			const pid = String(q.id);
-			const postId = pid.includes('_') ? pid.split('_')[0] : pid;
-			const p = postsMap.get(String(postId));
-			const title = (p && p['標題']) ? String(p['標題']) : `ID ${pid}`;
-			return pageLink(`/ghoststory/article/${encodeURIComponent(pid)}.html`, `日誌文章：${esc(title)}`) + noticeTag;
+		const articleId = articleIdFromUrl(rawUrl);
+		const articleLink = articlePagePath(url);
+		if (articleId && articleLink) {
+			const p = postsMap.get(String(articleId));
+			const title = (p && p['標題']) ? String(p['標題']) : `PostID ${articleId}`;
+			return pageLink(articleLink, `日誌文章：${esc(title)}`) + noticeTag;
 		}
 		if (path.startsWith('/services/compendium/detail.html') && q.id) {
 			const s = servicesMap.get(String(q.id));
 			const title = (s && s['標題']) ? String(s['標題']) : `ID ${q.id}`;
 			return pageLink(`/services/compendium/${encodeURIComponent(q.id)}.html`, `彙典：${esc(title)}`) + noticeTag;
+		}
+		if (/(^|\/)(Ability|Vision|Compendium)_\d{3}\.html$/.test(path)) {
+			const id = path.split('/').pop().replace(/\.html$/, '');
+			const s = servicesMap.get(String(id));
+			const title = (s && s['標題']) ? String(s['標題']) : `ID ${id}`;
+			const label = id.startsWith('Ability_') ? '服務內容' : id.startsWith('Vision_') ? '視覺紀錄' : '彙典';
+			return pageLink(path, `${label}：${esc(title)}`) + noticeTag;
 		}
 		// 其他固定頁面：顯示名稱並可點擊（保持原路徑）
 		return pageLink(path, esc(simplifyPage(url))) + noticeTag;
@@ -317,8 +366,12 @@
 		const raw = url || '/';
 		const path = raw.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
 		const q = parseQuery(raw);
-		const idPaths = ['/ghoststory/article/', '/services/compendium/detail.html', '/services/'];
-		if (q.id && idPaths.some(p => path.startsWith(p))) return path + '?id=' + q.id;
+		const articleId = articleIdFromUrl(raw);
+		if (articleId) return `/ghoststory/article/${encodeURIComponent(articleId)}.html`;
+		if (path.startsWith('/services/ability/')) return path;
+		if (path.startsWith('/services/vision/')) return path;
+		if (path.startsWith('/services/compendium/detail.html') && q.id) return `/services/compendium/${encodeURIComponent(q.id)}.html`;
+		if (path.startsWith('/services/compendium/')) return path;
 		if (path.startsWith('/services/notices')) return '/services/notices' + (q.from ? '?from=' + q.from : '');
 		return path;
 	}
@@ -327,18 +380,23 @@
 		const [path, qs] = key.split('?');
 		const q = parseQuery('?' + (qs || ''));
 		const idNote = (id) => ` <span style="font-size:11px;color:#b0a08d;">${esc(id)}</span>`;
-		if (path.startsWith('/ghoststory/article/') && q.id) {
-			const pid = String(q.id);
-			const postId = pid.includes('_') ? pid.split('_')[0] : pid;
-			const p = postsMapCache.get(String(postId)) || {};
-			const title = p['標題'] || `PostID ${postId}`;
-			return pageLink(`/ghoststory/article/${encodeURIComponent(pid)}.html`, `日誌文章：${esc(title)}`) + idNote(pid);
+
+		const articleId = articleIdFromUrl(key);
+		if (articleId) {
+			const p = postsMapCache.get(String(articleId)) || {};
+			const title = p['標題'] || `PostID ${articleId}`;
+			const link = articlePagePath(key) || `/ghoststory/article/${encodeURIComponent(articleId)}.html`;
+			return pageLink(link, `日誌文章：${esc(title)}`) + idNote(articleId);
 		}
-		if (path.startsWith('/services/compendium/detail.html') && q.id) {
-			const s = servicesMapCache.get(String(q.id)) || {};
-			const title = s['標題'] || `ID ${q.id}`;
-			return pageLink(`/services/compendium/${encodeURIComponent(q.id)}.html`, `彙典：${esc(title)}`) + idNote(q.id);
+
+		if (/(^|\/)(Ability|Vision|Compendium)_\d{3}\.html$/.test(path)) {
+			const id = path.split('/').pop().replace(/\.html$/, '');
+			const s = servicesMapCache.get(String(id)) || {};
+			const title = s['標題'] || `ID ${id}`;
+			const label = id.startsWith('Ability_') ? '服務內容' : id.startsWith('Vision_') ? '視覺紀錄' : '彙典';
+			return pageLink(`/${path.replace(/^\//, '')}`, `${label}：${esc(title)}`) + idNote(id);
 		}
+
 		return pageLink(key, esc(simplifyPage(key)));
 	}
 
@@ -405,6 +463,9 @@
 
 		const servicesMap = new Map();
 		(servicesArr || []).forEach(s => { if (s.ID) servicesMap.set(String(s.ID), s); });
+
+		postsMapCache = postsMap;
+		servicesMapCache = servicesMap;
 
 		const total = items.length;
 		const uniqueSessions = new Set(items.map(i => i.session_id).filter(Boolean)).size;
