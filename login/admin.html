@@ -29,8 +29,10 @@
 		.toolbar button:hover { background: #6d5a3e; }
 		.toolbar button.danger { background: #b04a3a; }
 		.toolbar button.ghost { background: #fff; color: #5c4332; border: 1px solid #ccc; }
-		table.data { width: 100%; border-collapse: collapse; font-size: 14px; }
-		table.data th, table.data td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; vertical-align: top; }
+		table.data th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+		table.data th.sortable:hover { background: #f0ebe3; }
+		table.data th.sortable.sorted-asc::after { content: " ▲"; font-size: 11px; }
+		table.data th.sortable.sorted-desc::after { content: " ▼"; font-size: 11px; }
 		table.data.nowrap { table-layout: auto; width: auto; min-width: 100%; }
 		table.data.nowrap th, table.data.nowrap td { white-space: nowrap; vertical-align: middle; }
 		table.data th { color: #4a2e1b; background: #faf6f0; }
@@ -118,7 +120,7 @@
 			<span id="postCount"></span>
 		</div>
 		<div style="overflow-x:auto;">
-		<table class="data"><thead><tr><th>ID</th><th>日期</th><th>標題</th><th>操作</th></tr></thead>
+		<table class="data"><thead><tr><th class="sortable" data-table="post" data-sort="id">ID</th><th class="sortable" data-table="post" data-sort="date">日期</th><th class="sortable" data-table="post" data-sort="title">標題</th><th>操作</th></tr></thead>
 		<tbody id="postRows"><tr><td colspan="4">載入中...</td></tr></tbody></table>
 		</div>
 	</section>
@@ -138,7 +140,7 @@
 			<span id="noticeCount"></span>
 		</div>
 		<div style="overflow-x:auto;">
-		<table class="data"><thead><tr><th>置頂</th><th>ID</th><th>標題</th><th>內容</th><th>操作</th></tr></thead>
+		<table class="data"><thead><tr><th class="sortable" data-table="notice" data-sort="pin">置頂</th><th class="sortable" data-table="notice" data-sort="id">ID</th><th class="sortable" data-table="notice" data-sort="title">標題</th><th class="sortable" data-table="notice" data-sort="content">內容</th><th>操作</th></tr></thead>
 		<tbody id="noticeRows"><tr><td colspan="5">載入中...</td></tr></tbody></table>
 		</div>
 	</section>
@@ -157,7 +159,7 @@
 			<span id="svcCount"></span>
 		</div>
 		<div style="overflow-x:auto;">
-		<table class="data"><thead><tr><th>ID</th><th>標題</th><th>操作</th></tr></thead>
+		<table class="data"><thead><tr><th class="sortable" data-table="svc" data-sort="id">ID</th><th class="sortable" data-table="svc" data-sort="title">標題</th><th>操作</th></tr></thead>
 		<tbody id="svcRows"><tr><td colspan="3">載入中...</td></tr></tbody></table>
 		</div>
 	</section>
@@ -182,7 +184,7 @@
 		<h3>操作紀錄（保留 3 個月）</h3>
 		<div class="toolbar"><select id="oplogUser"><option value="">全部使用者</option></select> <select id="oplogDev"><option value="">全部裝置</option></select> <select id="oplogMonth"><option value="">全部月份</option></select></div>
 		<div style="overflow-x:auto; max-height:420px; overflow-y:auto;">
-		<table class="data nowrap"><thead><tr><th>時間</th><th>使用者</th><th>事件</th><th>內容</th><th>位置/IP</th><th>裝置</th></tr></thead><tbody id="oplogRows"><tr><td colspan="6">載入中...</td></tr></tbody><tfoot><tr><td colspan="6" id="oplogSummary" style="background:#faf6f0; font-weight:bold; color:#4a2e1b;">共 0 筆</td></tr></tfoot></table>
+		<table class="data nowrap"><thead><tr><th class="sortable" data-table="oplog" data-sort="time">時間</th><th class="sortable" data-table="oplog" data-sort="user">使用者</th><th class="sortable" data-table="oplog" data-sort="event">事件</th><th class="sortable" data-table="oplog" data-sort="detail">內容</th><th class="sortable" data-table="oplog" data-sort="loc">位置/IP</th><th class="sortable" data-table="oplog" data-sort="device">裝置</th></tr></thead><tbody id="oplogRows"><tr><td colspan="6">載入中...</td></tr></tbody><tfoot><tr><td colspan="6" id="oplogSummary" style="background:#faf6f0; font-weight:bold; color:#4a2e1b;">共 0 筆</td></tr></tfoot></table>
 		</div>
 		<h3 style="margin-top:24px;">登入紀錄（保留 3 個月）</h3>
 		<div class="toolbar">
@@ -192,7 +194,7 @@
 			<button id="loginsReload" class="ghost">重新載入</button>
 		</div>
 		<div style="overflow-x:auto; max-height:420px; overflow-y:auto;">
-		<table class="data nowrap"><thead><tr><th>時間</th><th>事件</th><th>使用者</th><th>IP</th><th>位置</th><th>裝置</th></tr></thead>
+		<table class="data nowrap"><thead><tr><th class="sortable" data-table="login" data-sort="time">時間</th><th class="sortable" data-table="login" data-sort="event">事件</th><th class="sortable" data-table="login" data-sort="user">使用者</th><th class="sortable" data-table="login" data-sort="ip">IP</th><th class="sortable" data-table="login" data-sort="loc">位置</th><th class="sortable" data-table="login" data-sort="device">裝置</th></tr></thead>
 		<tbody id="loginRows"><tr><td colspan="6">尚未載入</td></tr></tbody><tfoot><tr><td colspan="6" id="loginsSummary" style="background:#faf6f0; font-weight:bold; color:#4a2e1b;">共 0 筆</td></tr></tfoot></table>
 		</div>
 	</section>

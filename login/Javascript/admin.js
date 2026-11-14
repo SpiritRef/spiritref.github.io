@@ -495,6 +495,107 @@ function refreshMonthFilter(list, selId) {
 	sel.innerHTML = '<option value="">全部月份</option>' + months.map(m => `<option value="${esc(m)}"${m === cur ? ' selected' : ''}>${esc(m)}</option>`).join('');
 }
 
+// ---------- 表格排序（點標題欄切換） ----------
+const tableSorts = {
+	post: { key: 'id', dir: 'desc' },
+	notice: { key: 'pin', dir: 'desc' },
+	svc: { key: 'id', dir: 'desc' },
+	oplog: { key: 'time', dir: 'desc' },
+	login: { key: 'time', dir: 'desc' }
+};
+
+function colGetter(table, key) {
+	if (table === 'post') {
+		if (key === 'id') return p => Number(p['PostID']) || 0;
+		if (key === 'date') return p => postDateVal(p);
+		if (key === 'title') return p => String(p['標題'] || '').toLowerCase();
+	}
+	if (table === 'notice') {
+		if (key === 'pin') return p => (p['置頂'] === true ? 1 : 0);
+		if (key === 'id') return p => Number(p['PostID']) || 0;
+		if (key === 'title') return p => String(p['標題'] || '').toLowerCase();
+		if (key === 'content') return p => String(p['貼文內容'] || p['內容'] || '').toLowerCase();
+	}
+	if (table === 'svc') {
+		if (key === 'id') return p => String(p['ID'] ?? '').toLowerCase();
+		if (key === 'title') return p => String(p['標題'] || '').toLowerCase();
+	}
+	if (table === 'oplog') {
+		if (key === 'time') return x => new Date(x.created_at).getTime() || 0;
+		if (key === 'user') return x => String(x.user_email || '').toLowerCase();
+		if (key === 'event') return x => String(x.event || '').toLowerCase();
+		if (key === 'detail') return x => String(x.detail || '').toLowerCase();
+		if (key === 'loc') return x => String(x.location || x.ip || '').toLowerCase();
+		if (key === 'device') return x => String(x.device || '').toLowerCase();
+	}
+	if (table === 'login') {
+		if (key === 'time') return x => new Date(x.created_at).getTime() || 0;
+		if (key === 'event') return x => String(x.event_name || '').toLowerCase();
+		if (key === 'user') return x => String(x.user_email || '').toLowerCase();
+		if (key === 'ip') return x => String(x.ip || '').toLowerCase();
+		if (key === 'loc') return x => [x.city, x.region, x.country_name].filter(Boolean).join(' · ').toLowerCase();
+		if (key === 'device') return x => {
+			const m = (x.user_agent || '').match(/Android|iPhone|iPad|Linux|Windows|Macintosh|Mac/);
+			return m ? m[0] : '';
+		};
+	}
+	return null;
+}
+
+function toggleTableSort(table, key) {
+	const s = tableSorts[table];
+	if (!s) return;
+	if (s.key === key) {
+		s.dir = s.dir === 'asc' ? 'desc' : 'asc';
+	} else {
+		s.key = key;
+		s.dir = 'desc';
+	}
+	updateSortIndicators(table);
+	if (table === 'post') postPage = 1;
+	if (table === 'notice') noticePage = 1;
+	if (table === 'svc') svcPage = 1;
+}
+
+function getSortedRows(rows, table) {
+	const s = tableSorts[table];
+	if (!s) return rows;
+	const g = colGetter(table, s.key);
+	if (!g) return rows;
+	return [...rows].sort((a, b) => {
+		const va = g(a), vb = g(b);
+		if (va === vb) return 0;
+		const r = va > vb ? 1 : -1;
+		return s.dir === 'asc' ? r : -r;
+	});
+}
+
+function updateSortIndicators(table) {
+	const s = tableSorts[table];
+	document.querySelectorAll('th.sortable[data-table="' + table + '"]').forEach(th => {
+		th.classList.remove('sorted-asc', 'sorted-desc');
+		if (!s || th.dataset.sort !== s.key) return;
+		th.classList.add(s.dir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+	});
+}
+
+function bindSortableHeaders() {
+	document.querySelectorAll('th.sortable').forEach(th => {
+		const table = th.dataset.table;
+		const key = th.dataset.sort;
+		if (!table || !key) return;
+		th.addEventListener('click', () => {
+			toggleTableSort(table, key);
+			if (table === 'post') renderPosts();
+			else if (table === 'notice') renderNoticesAdmin();
+			else if (table === 'svc') renderSvcRows();
+			else if (table === 'oplog') renderOplog();
+			else if (table === 'login') loadLogins();
+		});
+	});
+	['post', 'notice', 'svc', 'oplog', 'login'].forEach(updateSortIndicators);
+}
+
 function refreshDevFilter(list) {
 	const sel = $('oplogDev');
 	if (!sel) return;
@@ -555,7 +656,8 @@ async function loadLogins() {
 			if (monthFilter && monthOf(item.created_at) !== monthFilter) return false;
 			return true;
 		});
-		$('loginRows').innerHTML = filtered.map(item => {
+		const sorted = getSortedRows(filtered, 'login');
+		$('loginRows').innerHTML = sorted.map(item => {
 			const t = new Date(item.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
 			const pos = [item.city, item.region, item.country_name].filter(Boolean).join(' · ');
 			const devMatch = (item.user_agent || '').match(/Android|iPhone|iPad|Linux|Windows|Macintosh|Mac/);
@@ -564,7 +666,8 @@ async function loadLogins() {
 		}).join('') || '<tr><td colspan="6">（空）</td></tr>';
 
 		const summary = $('loginsSummary');
-		if (summary) summary.innerText = summarizeCount(filtered, 'event_name');
+		if (summary) summary.innerText = summarizeCount(sorted, 'event_name');
+		updateSortIndicators('login');
 	} catch (e) {
 		console.warn('讀取登入紀錄失敗:', e);
 		$('loginRows').innerHTML = `<tr><td colspan="6">讀取失敗：${esc(e.message || String(e))}</td></tr>`;
@@ -587,16 +690,18 @@ async function renderOplog() {
 		if (monthFilter && monthOf(e && e.created_at) !== monthFilter) return false;
 		return true;
 	});
+	const sorted = getSortedRows(filtered, 'oplog');
 	const tbody = $('oplogRows');
 	if (tbody) {
-		tbody.innerHTML = filtered.map(e => {
+		tbody.innerHTML = sorted.map(e => {
 			const t = new Date(e.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
 			const loc = [e.location, e.ip].filter(Boolean).join(' · ');
 			return `<tr><td>${esc(t)}</td><td>${esc(e.user_email || '')}</td><td>${esc(e.event || '')}</td><td>${esc(e.detail || '')}</td><td>${esc(loc)}</td><td>${esc(e.device || '')}</td></tr>`;
 		}).join('') || '<tr><td colspan="6">（空）</td></tr>';
 	}
 	const summary = $('oplogSummary');
-	if (summary) summary.innerText = summarizeCount(filtered, 'event');
+	if (summary) summary.innerText = summarizeCount(sorted, 'event');
+	updateSortIndicators('oplog');
 }
 
 async function logOp(event, detail) {
@@ -655,28 +760,19 @@ function postDateVal(p) {
 function renderPosts() {
 	const term = ($('postSearch').value || '').toLowerCase();
 	const picked = $('postTitleFilter') ? $('postTitleFilter').value : '';
-	const mode = $('postSort') ? $('postSort').value : 'id_desc';
 	const list = allPosts.filter(p => {
 		const titleOk = !picked || String(p['標題'] || '') === picked;
 		const termOk = !term || String(p['標題'] || '').toLowerCase().includes(term) || String(p['貼文內容'] || '').toLowerCase().includes(term);
 		return titleOk && termOk;
 	});
-	// 置頂永遠在前，再按選擇排序（預設 ID 新→舊）
-	list.sort((a, b) => {
-		const pin = ((b['置頂'] === true) - (a['置頂'] === true));
-		if (pin !== 0) return pin;
-		if (mode === 'id_asc') return (Number(a['PostID']) || 0) - (Number(b['PostID']) || 0);
-		if (mode === 'date_desc') return postDateVal(b) - postDateVal(a);
-		if (mode === 'date_asc') return postDateVal(a) - postDateVal(b);
-		return (Number(b['PostID']) || 0) - (Number(a['PostID']) || 0);
-	});
+	const sorted = getSortedRows(list, 'post');
 	const PAGE = 10;
-	const maxPage = Math.max(1, Math.ceil(list.length / PAGE));
+	const maxPage = Math.max(1, Math.ceil(sorted.length / PAGE));
 	if (postPage > maxPage) postPage = maxPage;
 	if (postPage < 1) postPage = 1;
-	const page = list.slice((postPage - 1) * PAGE, postPage * PAGE);
-	const scheduledCount = list.filter(p => postDateVal(p) > Date.now()).length;
-	$('postCount').innerText = `共 ${list.length} 筆（預約 ${scheduledCount} 筆）`;
+	const page = sorted.slice((postPage - 1) * PAGE, postPage * PAGE);
+	const scheduledCount = sorted.filter(p => postDateVal(p) > Date.now()).length;
+	$('postCount').innerText = `共 ${sorted.length} 筆（預約 ${scheduledCount} 筆）`;
 	$('postPageInfo').innerText = `/${maxPage}`;
 	const jump = $('postJump');
 	if (jump) {
@@ -701,6 +797,7 @@ function renderPosts() {
 				<button class="rowbtn" data-act="del" data-i="${idx}">刪除</button>
 			</td></tr>`;
 	}).join('') || '<tr><td colspan="4">無資料</td></tr>';
+	updateSortIndicators('post');
 }
 
 // ---------- 公告（獨立頁籤＋置頂） ----------
@@ -733,11 +830,12 @@ function renderNoticesAdmin() {
 		const c = String(i['貼文內容'] || i['內容'] || '').toLowerCase();
 		return t.includes(term) || c.includes(term);
 	});
-	const maxPage = Math.max(1, Math.ceil(list.length / ADMIN_PAGE));
+	const sorted = getSortedRows(list, 'notice');
+	const maxPage = Math.max(1, Math.ceil(sorted.length / ADMIN_PAGE));
 	if (noticePage > maxPage) noticePage = maxPage;
 	if (noticePage < 1) noticePage = 1;
-	const page = list.slice((noticePage - 1) * ADMIN_PAGE, noticePage * ADMIN_PAGE);
-	$('noticeCount').innerText = `共 ${list.length} 筆`;
+	const page = sorted.slice((noticePage - 1) * ADMIN_PAGE, noticePage * ADMIN_PAGE);
+	$('noticeCount').innerText = `共 ${sorted.length} 筆`;
 	$('noticePageInfo').innerText = `/${maxPage}`;
 	const jump = $('noticeJump');
 	if (jump) {
@@ -762,6 +860,7 @@ function renderNoticesAdmin() {
 				<button class="rowbtn" data-nact="del" data-i="${idx}">刪除</button>
 			</td></tr>`;
 	}).join('') || '<tr><td colspan="5">無資料</td></tr>';
+	updateSortIndicators('notice');
 }
 
 async function togglePostPin(idx) {
@@ -883,11 +982,12 @@ function renderSvcRows() {
 		const c = String(i['貼文內容'] || i['內容'] || '').toLowerCase();
 		return t.includes(term) || c.includes(term);
 	});
-	const maxPage = Math.max(1, Math.ceil(list.length / ADMIN_PAGE));
+	const sorted = getSortedRows(list, 'svc');
+	const maxPage = Math.max(1, Math.ceil(sorted.length / ADMIN_PAGE));
 	if (svcPage > maxPage) svcPage = maxPage;
 	if (svcPage < 1) svcPage = 1;
-	const page = list.slice((svcPage - 1) * ADMIN_PAGE, svcPage * ADMIN_PAGE);
-	$('svcCount').innerText = `共 ${list.length} 筆`;
+	const page = sorted.slice((svcPage - 1) * ADMIN_PAGE, svcPage * ADMIN_PAGE);
+	$('svcCount').innerText = `共 ${sorted.length} 筆`;
 	$('svcPageInfo').innerText = `/${maxPage}`;
 	const jump = $('svcJump');
 	if (jump) {
@@ -920,6 +1020,7 @@ function renderSvcRows() {
 		+ '<button class="rowbtn" data-sact="del" data-i="' + idx + '">刪除</button>'
 		+ '</td></tr>';
 	}).join('') || '<tr><td colspan="3">無資料</td></tr>';
+	updateSortIndicators('svc');
 }
 
 // ---------- 編輯 Modal ----------
@@ -1352,6 +1453,8 @@ export async function initAdmin(sess) {
 			} catch (err) { setStatus('❌ 刪除失敗：' + err.message, 'red'); }
 		}
 	};
+
+	bindSortableHeaders();
 
 	$('healthBtn').onclick = healthCheck;
 	$('oplogDev').onchange = renderOplog;
