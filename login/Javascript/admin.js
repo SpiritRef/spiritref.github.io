@@ -727,7 +727,7 @@ async function logOp(event, detail) {
 
 // ---------- 文章 ----------
 async function loadPosts() {
-	$('postRows').innerHTML = '<tr><td colspan="4">載入中...</td></tr>';
+	$('postRows').innerHTML = '<tr><td colspan="5">載入中...</td></tr>';
 	try {
 		allPosts = await fetchJson('/' + jsonPostsPath);
 	} catch (e) {
@@ -786,8 +786,12 @@ function renderPosts() {
 		const pinned = p['置頂'] === true;
 		const artUrl = `../ghoststory/article/${getCombinedId(p)}.html`;
 		const scheduled = postDateVal(p) > Date.now() ? ' ⏳預約' : '';
+		const contentPlain = String(p['貼文內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+		const contentShort = contentPlain.length > 20 ? contentPlain.slice(0, 20) + '…' : contentPlain;
+		const contentTitle = esc(contentPlain).replace(/"/g, '&quot;');
 		return `<tr><td>${pinned ? '📌' : ''}${esc(pid)}</td><td style="white-space:nowrap;">${esc(p['發佈日期'] || '')}${scheduled}</td>
 			<td class="title">${esc(p['標題'] || '(無標題)')}</td>
+			<td><div class="clamp2" title="${contentTitle}">${esc(contentShort)}</div></td>
 			<td style="white-space:nowrap;">
 				<button class="rowbtn" data-act="pin" data-i="${idx}">${pinned ? '取消置頂' : '置頂'}</button>
 				<a class="rowbtn" style="text-decoration:none;" href="${artUrl}" target="_blank">👁查看</a>
@@ -796,7 +800,7 @@ function renderPosts() {
 				<button class="rowbtn" data-act="edit" data-i="${idx}">編輯</button>
 				<button class="rowbtn" data-act="del" data-i="${idx}">刪除</button>
 			</td></tr>`;
-	}).join('') || '<tr><td colspan="4">無資料</td></tr>';
+	}).join('') || '<tr><td colspan="5">無資料</td></tr>';
 	updateSortIndicators('post');
 }
 
