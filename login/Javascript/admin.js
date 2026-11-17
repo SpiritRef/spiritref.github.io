@@ -82,52 +82,23 @@ async function ensurePat() {
 
 // GitHub 讀-改-寫：transform(arr) 回傳新陣列；409 自動重試一次
 // github modify json
-async function ghModifyJson(pat, repo, path, transform, message) {
-	for (let attempt = 0; attempt < 2; attempt++) {
-		const api = `https://api.github.com/repos/${GITHUB_USER}/${repo}/contents/${path}`;
-		const h = ghHeaders(pat);
-		let sha = null;
-		let arr = [];
-		const g = await fetch(api, { headers: h });
-		if (g.ok) {
-			const j = await g.json();
-			sha = j.sha;
-			arr = JSON.parse(fromB64(j.content));
-			if (!Array.isArray(arr)) throw new Error(`${path} 內容不是陣列`);
-		} else if (g.status !== 404) {
-			throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}（token 無效或權限不足？）`);
-		}
-		const next = transform(arr);
-		const verifyErrs = validateJsonArray(next, path);
-		if (verifyErrs.length) throw new Error(`JSON 驗證失敗（已中止寫入）：${verifyErrs.slice(0, 3).join('；')}`);
-		const body = { message, content: toB64(JSON.stringify(next, null, 1)) };
-		if (sha) body.sha = sha;
-		const p = await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
-		if (p.status === 409 && attempt === 0) continue; // 有人同時寫入，重抓再試
-		if (!p.ok) throw new Error(`寫入 ${path} 失敗: HTTP ${p.status} ${(await p.text()).slice(0, 100)}`);
-		return next;
-	}
-	throw new Error('連續衝突，請稍後再試');
-}
-
-// 通用文字檔寫入（sitemap.xml 等非 JSON 檔案）
-// generic file writer
-async function ghWriteFile(pat, repo, path, content, message) {
+// 讀取並轉換 JSON 陣列，但不寫入；回傳轉換後的陣列（呼叫端負責批次提交）
+async function ghTransformJson(pat, repo, path, transform) {
 	const api = `https://api.github.com/repos/${GITHUB_USER}/${repo}/contents/${path}`;
 	const h = ghHeaders(pat);
-	for (let attempt = 0; attempt < 2; attempt++) {
-		let sha = null;
-		const g = await fetch(api, { headers: h });
-		if (g.ok) sha = (await g.json()).sha;
-		else if (g.status !== 404) throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}`);
-		const body = { message, content: toB64(content) };
-		if (sha) body.sha = sha;
-		const p = await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
-		if (p.status === 409 && attempt === 0) continue;
-		if (!p.ok) throw new Error(`寫入 ${path} 失敗: HTTP ${p.status} ${(await p.text()).slice(0, 100)}`);
-		return true;
+	let arr = [];
+	const g = await fetch(api, { headers: h });
+	if (g.ok) {
+		const j = await g.json();
+		try { arr = JSON.parse(fromB64(j.content)); } catch (e) { throw new Error(`讀取 ${path} 內容解析失敗（JSON 毀損）`); }
+		if (!Array.isArray(arr)) throw new Error(`讀取 ${path} 內容不是陣列`);
+	} else if (g.status !== 404) {
+		throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}（token 無效或權限不足？）`);
 	}
-	throw new Error('連續衝突，請稍後再試');
+	const next = transform(arr);
+	const verifyErrs = validateJsonArray(next, path);
+	if (verifyErrs.length) throw new Error(`JSON 驗證失敗（已中止寫入）：${verifyErrs.slice(0, 3).join('；')}`);
+	return next;
 }
 
 // 靜態頁輔助：目錄列表（GitHub contents API）
@@ -150,66 +121,98 @@ async function ghDeleteFile(pat, repo, path, sha, message) {
 	return true;
 }
 
-// 寫入靜態頁（byte 比對一致就跳過，避免無意義的 commit）
-async function ghWriteFileIfChanged(pat, repo, path, content, message) {
+// 靜態頁比對：內容一致就回傳 'same'，不同（或檔案不存在、解碼失敗）就回傳 'different'
+async function ghDiffRemote(pat, repo, path, content) {
 	const api = `https://api.github.com/repos/${GITHUB_USER}/${repo}/contents/${path}`;
-	const h = ghHeaders(pat);
-	for (let attempt = 0; attempt < 2; attempt++) {
-		let sha = null;
-		const g = await fetch(api, { headers: h });
-		if (g.ok) {
-			const j = await g.json();
-			sha = j.sha;
-			try {
-				if (fromB64(j.content) === content) return 'skipped';
-			} catch (e) { /* 解碼失敗就視為需要重寫 */ }
-		} else if (g.status !== 404) {
-			throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}`);
-		}
-		const body = { message, content: toB64(content) };
-		if (sha) body.sha = sha;
-		const p = await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
-		if (p.status === 409 && attempt === 0) continue;
-		if (!p.ok) throw new Error(`寫入 ${path} 失敗: HTTP ${p.status} ${(await p.text()).slice(0, 100)}`);
-		return 'written';
-	}
-	throw new Error('連續衝突，請稍後再試');
+	const g = await fetch(api, { headers: ghHeaders(pat) });
+	if (g.status === 404) return 'different';
+	if (!g.ok) throw new Error(`讀取 ${path} 失敗: HTTP ${g.status}`);
+	const j = await g.json();
+	try {
+		if (fromB64(j.content) === content) return 'same';
+	} catch (e) { /* 解碼失敗就視為需要重寫 */ }
+	return 'different';
 }
 
-// 清掉不再存在的靜態頁（文章刪除 / 發佈日期改變 / 取消發佈）
-async function gcStaticPages(pat, posts, services) {
-	let deleted = 0;
+// Git Data API：一次 commit 寫入多個檔案（覆寫/新增），避免逐檔 commit
+async function ghBatchCommit(pat, files, message) {
+	const h = ghHeaders(pat);
+	const base = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/git`;
+	const req = async (p, opts) => {
+		const r = await fetch(base + p, { headers: h, ...opts });
+		return r;
+	};
+	// 1. 取 main 最新 commit 與 base tree
+	const refR = await req('/refs/heads/main', {});
+	if (!refR.ok) throw new Error(`讀取 main 參照失敗: HTTP ${refR.status}`);
+	const refJ = await refR.json();
+	const parentSha = refJ && refJ.object && refJ.object.sha;
+	if (!parentSha) throw new Error('讀取 main 參照格式異常');
+	const cR = await req('/commits/' + parentSha, {});
+	if (!cR.ok) throw new Error(`讀取 HEAD commit 失敗: HTTP ${cR.status}`);
+	const cJ = await cR.json();
+	const baseTree = cJ && cJ.tree && cJ.tree.sha;
+	if (!baseTree) throw new Error('讀取 base tree 失敗');
+	// 2. 建立 blob
+	const treeEntries = [];
+	for (const f of files) {
+		const br = await req('/blobs', { method: 'POST', body: JSON.stringify({ content: toB64(f.content), encoding: 'base64' }) });
+		if (!br.ok) throw new Error(`blob 建立失敗（${f.path}）: HTTP ${br.status}`);
+		const bj = await br.json();
+		treeEntries.push({ path: f.path, mode: '100644', type: 'blob', sha: bj.sha });
+	}
+	// 3. 建立 tree → commit → 更新 main
+	const tr = await req('/trees', { method: 'POST', body: JSON.stringify({ base_tree: baseTree, tree: treeEntries }) });
+	if (!tr.ok) throw new Error(`tree 建立失敗: HTTP ${tr.status} ${((await tr.text()) || '').slice(0, 120)}`);
+	const trJ = await tr.json();
+	const cr = await req('/commits', { method: 'POST', body: JSON.stringify({ message, tree: trJ.sha, parents: [parentSha] }) });
+	if (!cr.ok) throw new Error(`commit 建立失敗: HTTP ${cr.status}`);
+	const cj = await cr.json();
+	const pr = await req('/refs/heads/main', { method: 'PATCH', body: JSON.stringify({ sha: cj.sha, force: false }) });
+	if (pr.status === 422) throw new Error('main 在儲存期間被異動，已中止（不會覆蓋他人變更）');
+	if (!pr.ok) throw new Error(`分支更新失敗: HTTP ${pr.status}`);
+	return cj.sha;
+}
+
+// 列出不含發佈內容的靜態頁（文章刪除 / 發佈日期改變 / 取消發佈）；回傳需刪除路徑，由呼叫端一併處理
+async function gcListStaleStatic(pat, posts, services) {
+	const stale = [];
 	try {
 		const published = new Set((posts || []).filter(isPublished).map(p => String(getCombinedId(p)) + '.html'));
 		const dir = await ghListDir(pat, JSON_REPO, 'ghoststory/article');
 		for (const f of dir) {
 			if (!/^\d+_\d{14}\.html$/.test(f.name)) continue;
-			if (!published.has(f.name)) { await ghDeleteFile(pat, JSON_REPO, `ghoststory/article/${f.name}`, f.sha, `GC stale static page (${f.name})`); deleted++; }
+			if (!published.has(f.name)) stale.push(`ghoststory/article/${f.name}`);
 		}
-	} catch (e) { console.warn('GC 文章靜態頁失敗:', e); }
+	} catch (e) { console.warn('GC 文章靜態頁掃描失敗:', e); }
 	try {
 		const published = new Set((services || []).map(s => String(s['ID'] ?? s['標題'] ?? '') + '.html'));
 		for (const dir of ['services/compendium', 'services/ability', 'services/vision']) {
 			const files = await ghListDir(pat, JSON_REPO, dir);
 			for (const f of files) {
 				if (!/^(Ability|Vision|Compendium)_\d{3}\.html$/.test(f.name)) continue;
-				if (!published.has(f.name)) { await ghDeleteFile(pat, JSON_REPO, `${dir}/${f.name}`, f.sha, `GC stale service page (${f.name})`); deleted++; }
+				if (!published.has(f.name)) stale.push(`${dir}/${f.name}`);
 			}
 		}
-	} catch (e) { console.warn('GC 服務靜態頁失敗:', e); }
-	return deleted;
+	} catch (e) { console.warn('GC 服務靜態頁掃描失敗:', e); }
+	return stale;
 }
 
-// 只重建有變更的靜態頁；forceAll=true 時全部重產（仍會跳過內容一致的檔案）
-async function syncStaticPages(pat, posts, services, changePostIds, changeSvcIds, forceAll) {
-	let written = 0, skipped = 0;
+// 產生靜態頁差異清單（不提交）；forceAll=true 時全部重產（仍跳過內容一致的檔案）
+async function buildStaticPagesToSync(pat, posts, services, changePostIds, changeSvcIds, forceAll) {
+	const toWrite = [];
+	let skipped = 0;
 	for (const p of (posts || [])) {
 		const pid = String(p['PostID'] ?? '');
 		if (!forceAll && !changePostIds.has(pid)) continue;
 		const html = buildArticleHtml(p);
 		if (!html) continue;
-		const r = await ghWriteFileIfChanged(pat, JSON_REPO, `ghoststory/article/${getCombinedId(p)}.html`, html, `Sync static article ${pid}`);
-		if (r === 'written') written++; else skipped++;
+		const path = `ghoststory/article/${getCombinedId(p)}.html`;
+		try {
+			const r = await ghDiffRemote(pat, JSON_REPO, path, html);
+			if (r === 'same') { skipped++; continue; }
+		} catch (e) { console.warn('比對遠端靜態頁失敗，視為需要寫入:', e); }
+		toWrite.push({ path, content: html, message: `Sync static article ${pid}` });
 	}
 	for (const s of (services || [])) {
 		const sid = String(s['ID'] ?? s['標題'] ?? '');
@@ -218,11 +221,37 @@ async function syncStaticPages(pat, posts, services, changePostIds, changeSvcIds
 		const html = buildCompendiumHtml(s);
 		if (!html) continue;
 		const detailPath = serviceDetailPath(sid);
-		const r = await ghWriteFileIfChanged(pat, JSON_REPO, detailPath, html, `Sync static service ${sid}`);
-		if (r === 'written') written++; else skipped++;
+		try {
+			const r = await ghDiffRemote(pat, JSON_REPO, detailPath, html);
+			if (r === 'same') { skipped++; continue; }
+		} catch (e) { console.warn('比對遠端靜態頁失敗，視為需要寫入:', e); }
+		toWrite.push({ path: detailPath, content: html, message: `Sync static service ${sid}` });
 	}
-	const deleted = await gcStaticPages(pat, posts, services);
-	return { written, skipped, deleted };
+	return { toWrite, skipped };
+}
+
+// 單獨刪除不存在的靜態頁（GC）；批次提交成功後才呼叫
+async function gcDeleteStale(pat, posts, services) {
+	let deleted = 0;
+	const stale = await gcListStaleStatic(pat, posts, services);
+	for (const p of stale) {
+		try {
+			const g = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${p}`, { headers: ghHeaders(pat) });
+			if (g.ok) { const j = await g.json(); await ghDeleteFile(pat, JSON_REPO, p, j.sha, `GC stale static page ${p}`); deleted++; }
+		} catch (e3) { console.warn('GC 逐檔刪除失敗:', p, e3); }
+	}
+	return deleted;
+}
+
+// 只重建有變更的靜態頁（供外部呼叫）；saveAll 內部改為自行組裝成同一個批次
+async function syncStaticPages(pat, posts, services, changePostIds, changeSvcIds, forceAll) {
+	const { toWrite, skipped } = await buildStaticPagesToSync(pat, posts, services, changePostIds, changeSvcIds, forceAll);
+	let commit = null;
+	if (toWrite.length > 0) {
+		commit = await ghBatchCommit(pat, toWrite, `Sync static pages（${toWrite.length} 個）`);
+	}
+	const deleted = await gcDeleteStale(pat, posts, services);
+	return { written: toWrite.length, skipped, deleted, commit };
 }
 
 // 驗證 saveAll 寫回的 JSON 是否合理（避免把壞掉的 JSON 推上去）
@@ -244,26 +273,6 @@ function validateJsonArray(arr, path) {
 }
 
 // buildSitemapXml 已移至 /Javascript/sitemap.js 共用
-
-async function bumpVersion(pat, section, count) {
-	try {
-		const api = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${VERSION_PATH}`;
-		const h = ghHeaders(pat);
-		let sha = null;
-		let ver = {};
-		const g = await fetch(api, { headers: h });
-		if (g.ok) {
-			const j = await g.json();
-			sha = j.sha;
-			const parsed = JSON.parse(fromB64(j.content));
-			if (parsed && typeof parsed === 'object') ver = parsed;
-		}
-		ver[section] = { updatedAt: new Date().toISOString(), count };
-		const body = { message: `Sync version (${section})`, content: toB64(JSON.stringify(ver)) };
-		if (sha) body.sha = sha;
-		await fetch(api, { method: 'PUT', headers: h, body: JSON.stringify(body) });
-	} catch (e) { console.warn('版本戳寫入失敗（不影響本體）:', e); }
-}
 
 // 暫存記帳的操作套用到新抓的陣列（儲存時一次結算）
 function matchItem(p, m) {
@@ -331,90 +340,132 @@ async function saveAll() {
 	try {
 		const pat = await ensurePat();
 		const files = [...new Set(pendingOps.map(o => o.file))];
-		let savedPosts = null;
-		let savedServices = null;
+		// 1. 先依待辦操作轉換出新的 JSON（不寫入）
+		const prepared = {};
 		for (const file of files) {
 			const path = file === 'posts' ? jsonPostsPath : jsonSvcPath;
-			const next = await ghModifyJson(pat, JSON_REPO, path,
-				(arr) => applyOps(arr, pendingOps.filter(o => o.file === file)),
-				`Admin save ${file} (${pendingOps.filter(o => o.file === file).length} ops)`);
-			await bumpVersion(pat, file, next.length);
-			if (file === 'posts') {
-				savedPosts = next;
-				try {
-					allPosts = next;
-					allNotices = next.filter(i => String(i['標題'] || '').includes('公告'));
-					sortPinned(allNotices);
-					renderPosts();
-					renderNoticesAdmin();
-				} catch (e) {}
-			} else {
-				savedServices = next;
-				allSvcFull = savedServices;
-				try {
-					const cat = svcCat;
-					allSvc = savedServices.filter(i => String(i['分類'] || '') === cat);
-					renderSvcRows();
-				} catch (e) {}
+			prepared[file] = {
+				path,
+				ops: pendingOps.filter(o => o.file === file).length,
+				next: await ghTransformJson(pat, JSON_REPO, path, (arr) => applyOps(arr, pendingOps.filter(o => o.file === file)))
+			};
+		}
+		const postsNext = prepared['posts'] ? prepared['posts'].next : null;
+		const svcNext = prepared['services'] ? prepared['services'].next : null;
+		// 2. 依序收集要放進同一批 commit 的檔案（比對遠端，一致就跳過）
+		const batchFiles = [];
+		for (const file of files) {
+			const p = prepared[file];
+			const content = JSON.stringify(p.next, null, 1);
+			try {
+				const d = await ghDiffRemote(pat, JSON_REPO, p.path, content);
+				if (d === 'same') continue;
+			} catch (e) { /* 比對失敗仍然寫 */ }
+			batchFiles.push({ path: p.path, content });
+		}
+		// 3. sitemap.xml（只放有變更的）
+		let sitemapXml = null;
+		try {
+			const postsForSitemap = postsNext || allPosts || [];
+			let servicesForSitemap = svcNext;
+			if (!servicesForSitemap && jsonSvcPath) {
+				try { servicesForSitemap = await fetchJson('/' + jsonSvcPath); } catch (e) { servicesForSitemap = null; }
+			}
+			sitemapXml = buildSitemapXml(postsForSitemap, servicesForSitemap);
+			if (sitemapXml) {
+				const d = await ghDiffRemote(pat, JSON_REPO, 'sitemap.xml', sitemapXml);
+				if (d === 'different') batchFiles.push({ path: 'sitemap.xml', content: sitemapXml });
+			}
+		} catch (e) { console.warn('sitemap 更新失敗（不影響本體）:', e); }
+		// 4. 靜態頁比對（只放有差異的）
+		const postsNow = postsNext || allPosts || [];
+		let svcNow = svcNext || allSvcFull || allSvc || [];
+		if (!svcNow || svcNow.length === 0) {
+			try { svcNow = await fetchJson('/' + jsonSvcPath); } catch (e) { svcNow = allSvcFull || allSvc || []; }
+		}
+		const changePostIds = new Set();
+		const changeSvcIds = new Set();
+		for (const o of pendingOps) {
+			if (o.file === 'posts' && o.match && o.match.PostID != null) changePostIds.add(String(o.match.PostID));
+			if (o.file === 'services' && o.match) {
+				if (o.match.ID !== undefined) changeSvcIds.add(String(o.match.ID));
+				else if (o.match.keyTitle !== undefined) {
+					const found = (svcNow || []).find(s => s && s['標題'] === o.match.keyTitle);
+					if (found && found['ID'] !== undefined) changeSvcIds.add(String(found['ID']));
+				}
 			}
 		}
-		// 自動更新 sitemap.xml（文章或服務有變更時）
-		if (savedPosts || savedServices) {
-			try {
-				const postsForSitemap = savedPosts || allPosts;
-				let servicesForSitemap = savedServices;
-				if (!servicesForSitemap && jsonSvcPath) {
-					try { servicesForSitemap = await fetchJson('/' + jsonSvcPath); } catch (e) { servicesForSitemap = null; }
-				}
-				const sitemapXml = buildSitemapXml(postsForSitemap, servicesForSitemap);
-				await ghWriteFile(pat, JSON_REPO, 'sitemap.xml', sitemapXml, 'Admin save sitemap');
-			} catch (e) { console.warn('sitemap 更新失敗（不影響本體）:', e); }
-
-			// 增量重產靜態頁（只重建有變更的頁面，並清理被刪除的舊頁）
-			try {
-				const postsNow = savedPosts || allPosts;
-				// 服務：優先用剛寫入的最新資料（savedServices / allSvcFull），避免 live
-				// 的 max-age 舊快取覆蓋掉本次剛儲存的內容（例如剛填好的圖片連結）。
-				let svcNow = savedServices || allSvcFull;
-				if (!svcNow || svcNow.length === 0) {
-					try { svcNow = await fetchJson('/' + jsonSvcPath); } catch (e) { svcNow = allSvcFull || allSvc || []; }
-				}
-
-				const changePostIds = new Set();
-				const changeSvcIds = new Set();
-				for (const o of pendingOps) {
-					if (o.file === 'posts' && o.match && o.match.PostID != null) changePostIds.add(String(o.match.PostID));
-					if (o.file === 'services' && o.match) {
-						if (o.match.ID !== undefined) changeSvcIds.add(String(o.match.ID));
-						else if (o.match.keyTitle !== undefined) {
-							const found = (svcNow || []).find(s => s && s['標題'] === o.match.keyTitle);
-							if (found && found['ID'] !== undefined) changeSvcIds.add(String(found['ID']));
-						}
-					}
-				}
-				// append 的 pendingOp 沒有 match，而且 allPosts/allSvc 在 staging 時已樂觀 push（新增項目），
-				// 會污染 prev*Ids 的 diff → 補上「載入頁面後新出現的 ID」當 fallback。
-				for (const p of (postsNow || [])) if (p && p['PostID'] != null && !loadedPostIds.has(String(p['PostID']))) changePostIds.add(String(p['PostID']));
-				for (const s of (svcNow || [])) if (s && s['ID'] != null && !loadedSvcIds.has(String(s['ID']))) changeSvcIds.add(String(s['ID']));
-				for (const p of (postsNow || [])) if (p && p['PostID'] != null) loadedPostIds.add(String(p['PostID']));
-				for (const s of (svcNow || [])) if (s && s['ID'] != null) loadedSvcIds.add(String(s['ID']));
-
-				const result = await syncStaticPages(pat, postsNow, svcNow, changePostIds, changeSvcIds, false);
-				if (changePostIds.size || changeSvcIds.size) {
-					try {
-						logOp('靜態頁同步', `${result.written} 寫入 / ${result.skipped} 略過 / ${result.deleted} 刪除（文章 ${changePostIds.size} 篇、服務 ${changeSvcIds.size} 個）`);
-					} catch (e2) {}
-				}
-				console.log(`靜態頁同步：寫入 ${result.written}、略過 ${result.skipped}、刪除 ${result.deleted}`);
-			} catch (e) {
-				console.warn('靜態頁同步失敗（不影響本體）:', e);
-				try { logOp('靜態頁同步失敗', String((e && e.message) || e)); } catch (e2) {}
-				setStatus('⚠️ 靜態頁同步失敗：' + String((e && e.message) || e) + '（可按「🔧 重產靜態頁」補救）', 'orange');
+		// append 的 pendingOp 沒有 match，而且 allPosts/allSvc 在 staging 時已樂觀 push（新增項目），
+		// 會污染 prev*Ids 的 diff → 補上「載入頁面後新出現的 ID」當 fallback。
+		for (const p of (postsNow || [])) if (p && p['PostID'] != null && !loadedPostIds.has(String(p['PostID']))) changePostIds.add(String(p['PostID']));
+		for (const s of (svcNow || [])) if (s && s['ID'] != null && !loadedSvcIds.has(String(s['ID']))) changeSvcIds.add(String(s['ID']));
+		let staticSummary = 0;
+		try {
+			const sp = await buildStaticPagesToSync(pat, postsNow, svcNow, changePostIds, changeSvcIds, false);
+			staticSummary = sp.toWrite.length;
+			for (const f of sp.toWrite) batchFiles.push({ path: f.path, content: f.content });
+			if (changePostIds.size || changeSvcIds.size) {
+				logOp('靜態頁同步', `${staticSummary} 寫入 / ${sp.skipped} 略過（文章 ${changePostIds.size} 篇、服務 ${changeSvcIds.size} 個）`);
 			}
+		} catch (e) {
+			console.warn('靜態頁比對失敗（不影響本體）:', e);
+			try { logOp('靜態頁同步失敗', String((e && e.message) || e)); } catch (e2) {}
+		}
+		// 新出現的 ID 也要計入已看過（避免下次重覆當作新增項目）
+		for (const p of (postsNow || [])) if (p && p['PostID'] != null) loadedPostIds.add(String(p['PostID']));
+		for (const s of (svcNow || [])) if (s && s['ID'] != null) loadedSvcIds.add(String(s['ID']));
+		// 5. 版本戳（只在本次批次有任何內容變更時才寫）
+		if (batchFiles.length > 0) {
+			try {
+				const api = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${VERSION_PATH}`;
+				const h = ghHeaders(pat);
+				const g = await fetch(api, { headers: h });
+				let ver = {};
+				if (g.ok) {
+					const j = await g.json();
+					try { const parsed = JSON.parse(fromB64(j.content)); if (parsed && typeof parsed === 'object') ver = parsed; } catch (e) {}
+				}
+				if (postsNext) ver['posts'] = { updatedAt: new Date().toISOString(), count: postsNext.length };
+				if (svcNext) ver['services'] = { updatedAt: new Date().toISOString(), count: svcNext.length };
+				batchFiles.push({ path: VERSION_PATH, content: JSON.stringify(ver, null, 2) + '\n' });
+			} catch (e) { console.warn('版本戳寫入失敗（不影響本體）:', e); }
+		}
+		// 6. 一次 batch commit（失敗就整批不落地，暫存保留可重試）
+		let commit = null;
+		if (batchFiles.length > 0) {
+			const opsSummary = files.map(f => `${f}×${prepared[f].ops}`).join(', ');
+			commit = await ghBatchCommit(pat, batchFiles, `Admin save（${opsSummary}，${batchFiles.length} 檔）`);
+		}
+		// 7. 清除不含發佈內容的舊靜態頁（逐檔刪除）
+		const deleted = await gcDeleteStale(pat, postsNow, svcNow);
+		// 8. 本地記憶體狀態更新
+		if (postsNext) {
+			allPosts = postsNext;
+			try {
+				allNotices = postsNext.filter(i => String(i['標題'] || '').includes('公告'));
+				sortPinned(allNotices);
+				renderPosts();
+				renderNoticesAdmin();
+			} catch (e) {}
+		}
+		if (svcNext) {
+			allSvcFull = svcNext;
+			try {
+				const cat = svcCat;
+				allSvc = svcNext.filter(i => String(i['分類'] || '') === cat);
+				renderSvcRows();
+			} catch (e) {}
 		}
 		pendingOps = [];
 		updateSaveBar();
-		setStatus('✅ 已儲存，前台約 1~3 分鐘生效', 'green');
+		if (commit) {
+			const shortCommit = String(commit).slice(0, 7);
+			const extra = staticSummary > 0 ? `、靜態頁 ${staticSummary} 頁` : '';
+			logOp('儲存', `${files.join('+')}（${batchFiles.length} 檔），commit ${shortCommit}${extra}${deleted ? `，刪除 ${deleted} 頁` : ''}`);
+			setStatus(`✅ 已儲存（commit ${shortCommit}${extra}），前台約 1~3 分鐘生效`, 'green');
+		} else {
+			setStatus('✅ 已儲存，內容無變更（無需上傳）', 'green');
+		}
 	} catch (e) {
 		setStatus('❌ 儲存失敗：' + e.message + '（暫存保留，可重試）', 'red');
 	}
@@ -427,9 +478,10 @@ async function rebuildAllStaticPages() {
 		const pat = await ensurePat();
 		const fullSvc = (jsonSvcPath ? await fetchJson('/' + jsonSvcPath).catch(() => allSvcFull) : allSvcFull) || allSvcFull || allSvc;
 		const result = await syncStaticPages(pat, allPosts, fullSvc, new Set(), new Set(), true);
-		const msg = `✅ 重產完成：寫入 ${result.written} 頁、略過 ${result.skipped} 頁、刪除舊頁 ${result.deleted} 頁`;
+		const commitShort = result.commit ? String(result.commit).slice(0, 7) : '';
+		const msg = `✅ 重產完成：寫入 ${result.written} 頁、略過 ${result.skipped} 頁、刪除舊頁 ${result.deleted} 頁${commitShort ? `（commit ${commitShort}）` : ''}`;
 		setStatus(msg, 'green');
-		logOp('重產靜態頁', `${result.written} 寫入 / ${result.skipped} 略過 / ${result.deleted} 刪除`);
+		logOp('重產靜態頁', `${result.written} 寫入 / ${result.skipped} 略過 / ${result.deleted} 刪除${commitShort ? `，commit ${commitShort}` : ''}`);
 	} catch (e) {
 		console.warn('重產靜態頁失敗:', e);
 		setStatus('❌ 重產靜態頁失敗：' + (e?.message || e), 'red');
