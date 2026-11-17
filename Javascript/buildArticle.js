@@ -2,7 +2,13 @@
 // 與 /ghoststory/article/ 動態頁面輸出結構/樣式一致，但資料已內嵌。
 // 注意：此檔被後台（存檔時自動增量產生靜態頁）與全量重產使用，修改時請確保兩邊一致。
 
-export const SITE_BASE = 'https://spiritref.github.io';
+const DEFAULT_SITE_BASE = 'https://spiritref.github.io';
+let _siteBase = DEFAULT_SITE_BASE;
+export function initSiteBase(v) {
+	const s = String(v || '').trim().replace(/\/+$/, '');
+	if (/^https?:\/\//i.test(s)) _siteBase = s;
+}
+export function siteBase() { return _siteBase; }
 
 export function serviceDir(id) {
 	const s = String(id || '');
@@ -26,7 +32,7 @@ export function linkify(text) {
 	const urlRegex = /(https?:\/\/[^\s<]+)/g;
 	return escaped.replace(urlRegex, (url) => {
 		const safe = url.replace(/"/g, '&quot;');
-		return `<a href="${safe}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+		return `<a href="${rootRelAll(safe)}" target="_blank" rel="noopener noreferrer">${url}</a>`;
 	});
 }
 
@@ -66,7 +72,14 @@ function absoluteImg(src) {
 	const s = String(src || '').trim();
 	if (!s) return null;
 	if (/^https?:\/\//i.test(s)) return s;
-	return `${SITE_BASE}/ghoststory/${s.replace(/^\.\//, '').replace(/^\//, '')}`;
+	return `${siteBase()}/ghoststory/${s.replace(/^\.\//, '').replace(/^\//, '')}`;
+}
+
+// 自有網域的絕對網址 → 根絕對路徑（與靜態頁掃書一致，外部網址不動）
+function rootRelAll(u) {
+	const s = String(u || '');
+	const own = siteBase().replace(/\/+$/, '') + '/';
+	return own ? s.split(own).join('/') : s;
 }
 
 const ARTICLE_STYLE = `:root {
@@ -177,9 +190,9 @@ function articleHead({ title, desc, pageUrl, ogType, imgUrl }) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>${t} | 鬼磕頭日誌</title>
 	<meta name="description" content="${d}">
-    <link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" href="https://spiritref.github.io/GhostKowtow.jpg">
+    <link rel="icon" href="/GhostKowtow.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/GhostKowtow.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="/GhostKowtow.jpg">
     <meta property="og:title" content="${t} | 鬼磕頭日誌">
     <meta property="og:description" content="${d}">
     <meta property="og:image" content="${img}">
@@ -212,11 +225,11 @@ export function buildArticleHtml(post) {
 	const id = getCombinedId(post);
 	const title = String(post['標題'] || '鬼磕頭日誌');
 	const desc = descOf(post['貼文內容']) || '穿梭陰陽，紀錄最真實的靈界對話。';
-	const pageUrl = `${SITE_BASE}/ghoststory/article/${encodeURIComponent(id)}.html`;
+	const pageUrl = `${siteBase()}/ghoststory/article/${encodeURIComponent(id)}.html`;
 	const imgData = String(post['圖片網址'] || post['圖片'] || '');
 	const imgs = imgData.split(/\r?\n|\|/).map(s => s.trim()).filter(Boolean);
-	const firstImg = absoluteImg(imgs[0]) || `${SITE_BASE}/GhostKowtow.jpg`;
-	const imgTags = imgs.map(src => `<img src="${escapeHtml(absoluteImg(src))}" class="full-img" alt="${escapeHtml(title)}" loading="lazy">`).join('');
+	const firstImg = absoluteImg(imgs[0]) || `${siteBase()}/GhostKowtow.jpg`;
+	const imgTags = imgs.map(src => `<img src="${escapeHtml(rootRelAll(absoluteImg(src)))}" class="full-img" alt="${escapeHtml(title)}" loading="lazy">`).join('');
 
 	return `${articleHead({ title, desc, pageUrl, ogType: 'article', imgUrl: firstImg })}
     <style>
@@ -247,8 +260,8 @@ export function buildCompendiumHtml(item) {
 	const title = String(item['標題'] || '超自然現象彙典');
 	const raw = String(item['貼文內容'] || item['內容'] || '');
 	const desc = descOf(raw) || '超自然現象彙典彙整各種真實靈界紀實案例。';
-	const pageUrl = `${SITE_BASE}/${serviceDetailPath(id)}`;
-	const imgUrl = `${SITE_BASE}/GhostKowtow.jpg`;
+	const pageUrl = `${siteBase()}/${serviceDetailPath(id)}`;
+	const imgUrl = `${siteBase()}/GhostKowtow.jpg`;
 	const body = linkify(raw || '暫無內容');
 
 	const posturl = item['連結'] || item['貼文連結'] || '';
@@ -261,7 +274,7 @@ export function buildCompendiumHtml(item) {
 		const isImages = urlArray.every(u => /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(u) || u.startsWith('pic/') || u.startsWith('ghoststory/pic/'));
 		if (isImages) {
 			linksHtml = '<div class="compendium-links"><span>相關圖片：</span>' + urlArray.map(u => {
-				const src = String(u).trim();
+				const src = rootRelAll(String(u).trim());
 				const path = /^(https?:)?\/\//.test(src) ? src : (src.startsWith('pic/') ? '/ghoststory/' + src : (src.startsWith('ghoststory/pic/') ? '/' + src : src));
 				return `<img src="${escapeHtml(path)}" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'">`;
 			}).join('') + '</div>';
@@ -272,7 +285,7 @@ export function buildCompendiumHtml(item) {
 				const href = m
 					? '/ghoststory/article/' + m[1] + '.html?from=compendium'
 					: (/ghoststory\/article\//.test(url) ? url + (url.includes('?') ? '&' : '?') + 'from=compendium' : url);
-				return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`;
+				return `<a href="${escapeHtml(rootRelAll(href))}" target="_blank" rel="noopener noreferrer">篇章蟲洞</a>`;
 			}).join('') + '</div>';
 		}
 	}
@@ -314,9 +327,9 @@ body.dark-mode .compendium-links { border-top-color: #4a4238; color: #a89a8a; }
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>${escapeHtml(titleText)} | 鬼磕頭</title>
 	<meta name="description" content="${escapeHtml(desc)}">
-    <link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" href="https://spiritref.github.io/GhostKowtow.jpg">
+    <link rel="icon" href="/GhostKowtow.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/GhostKowtow.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="/GhostKowtow.jpg">
     <meta property="og:title" content="${escapeHtml(titleText + ' | 超自然現象彙典')}">
     <meta property="og:description" content="${escapeHtml(desc)}">
     <meta property="og:image" content="${escapeHtml(imgUrl)}">

@@ -1,6 +1,8 @@
 // 共用：產生 sitemap.xml 內容（與 Tool/generate-sitemap.ps1 邏輯一致）
+import { siteBase } from './buildArticle.js';
+
 export function buildSitemapXml(posts, services) {
-	const base = 'https://spiritref.github.io';
+	const base = siteBase();
 	const today = new Date().toISOString().slice(0, 10);
 	const entries = [];
 	const staticPages = [

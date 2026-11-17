@@ -1,6 +1,6 @@
 import { getIni, getCombinedId } from '/Javascript/global.js?v=20261212';
-import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261212';
-import { buildArticleHtml, buildCompendiumHtml, isPublished, serviceDetailPath } from '/Javascript/buildArticle.js?v=20261212';
+import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261118';
+import { buildArticleHtml, buildCompendiumHtml, isPublished, serviceDetailPath, initSiteBase } from '/Javascript/buildArticle.js?v=20261118';
 import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261212';
 import { getSupabase } from './adminAuth.js?v=20261212';
 
@@ -17,6 +17,8 @@ let jsonSvcPath = '';
 let allPosts = [];
 let allSvc = [];
 let allSvcFull = []; // 不論目前停留在哪個服務分類，同步／GC 都用完整清單
+let loadedPostIds = new Set(); // 頁面載入時已見過的 PostID（靜態頁增量同步判斷用）
+let loadedSvcIds = new Set();  // 頁面載入時已見過的服務 ID（靜態頁增量同步判斷用）
 let allNotices = [];
 let editing = null; // {kind:'post'|'svc'|'notice'}
 let postPage = 1;
@@ -327,9 +329,6 @@ async function saveAll() {
 	if (!pendingOps.length) return;
 	setStatus('⏳ 儲存中...', 'blue');
 	try {
-		// 儲存前快照：用來判斷哪些文章/彙典是這次新增的
-		const prevPostIds = new Set((allPosts || []).map(p => String(p['PostID'] ?? '')));
-		const prevSvcIds = new Set((allSvc || []).map(s => String(s['ID'] ?? '')));
 		const pat = await ensurePat();
 		const files = [...new Set(pendingOps.map(o => o.file))];
 		let savedPosts = null;
@@ -374,12 +373,11 @@ async function saveAll() {
 			// 增量重產靜態頁（只重建有變更的頁面，並清理被刪除的舊頁）
 			try {
 				const postsNow = savedPosts || allPosts;
+				// 服務：優先用剛寫入的最新資料（savedServices / allSvcFull），避免 live
+				// 的 max-age 舊快取覆蓋掉本次剛儲存的內容（例如剛填好的圖片連結）。
 				let svcNow = savedServices || allSvcFull;
 				if (!svcNow || svcNow.length === 0) {
-					try { svcNow = await fetchJson('/' + jsonSvcPath); } catch (e) { svcNow = allSvcFull || allSvc; }
-				} else {
-					// 保底：一定用完整清單，避免過濾後分類影響 GC
-					try { const full = await fetchJson('/' + jsonSvcPath); if (Array.isArray(full) && full.length) svcNow = full; } catch (e) {}
+					try { svcNow = await fetchJson('/' + jsonSvcPath); } catch (e) { svcNow = allSvcFull || allSvc || []; }
 				}
 
 				const changePostIds = new Set();
@@ -394,12 +392,25 @@ async function saveAll() {
 						}
 					}
 				}
-				for (const p of (postsNow || [])) if (!prevPostIds.has(String(p['PostID'] ?? ''))) changePostIds.add(String(p['PostID'] ?? ''));
-				for (const s of (svcNow || [])) if (!prevSvcIds.has(String(s['ID'] ?? ''))) changeSvcIds.add(String(s['ID'] ?? ''));
+				// append 的 pendingOp 沒有 match，而且 allPosts/allSvc 在 staging 時已樂觀 push（新增項目），
+				// 會污染 prev*Ids 的 diff → 補上「載入頁面後新出現的 ID」當 fallback。
+				for (const p of (postsNow || [])) if (p && p['PostID'] != null && !loadedPostIds.has(String(p['PostID']))) changePostIds.add(String(p['PostID']));
+				for (const s of (svcNow || [])) if (s && s['ID'] != null && !loadedSvcIds.has(String(s['ID']))) changeSvcIds.add(String(s['ID']));
+				for (const p of (postsNow || [])) if (p && p['PostID'] != null) loadedPostIds.add(String(p['PostID']));
+				for (const s of (svcNow || [])) if (s && s['ID'] != null) loadedSvcIds.add(String(s['ID']));
 
 				const result = await syncStaticPages(pat, postsNow, svcNow, changePostIds, changeSvcIds, false);
+				if (changePostIds.size || changeSvcIds.size) {
+					try {
+						logOp('靜態頁同步', `${result.written} 寫入 / ${result.skipped} 略過 / ${result.deleted} 刪除（文章 ${changePostIds.size} 篇、服務 ${changeSvcIds.size} 個）`);
+					} catch (e2) {}
+				}
 				console.log(`靜態頁同步：寫入 ${result.written}、略過 ${result.skipped}、刪除 ${result.deleted}`);
-			} catch (e) { console.warn('靜態頁同步失敗（不影響本體）:', e); }
+			} catch (e) {
+				console.warn('靜態頁同步失敗（不影響本體）:', e);
+				try { logOp('靜態頁同步失敗', String((e && e.message) || e)); } catch (e2) {}
+				setStatus('⚠️ 靜態頁同步失敗：' + String((e && e.message) || e) + '（可按「🔧 重產靜態頁」補救）', 'orange');
+			}
 		}
 		pendingOps = [];
 		updateSaveBar();
@@ -737,6 +748,7 @@ async function loadPosts() {
 		} catch (e2) { allPosts = []; }
 		setStatus('⚠️ JSON 讀取失敗，顯示本機快取', 'orange');
 	}
+	loadedPostIds = new Set((allPosts || []).map(p => String((p && p['PostID']) ?? '')));
 	updateTitleFilter();
 	renderPosts();
 }
@@ -969,6 +981,7 @@ async function loadSvc() {
 			if (!jsonSvcPath) throw new Error('INI 缺少 JsonService');
 			const d = await fetchJson('/' + jsonSvcPath);
 			allSvcFull = d.slice();
+			loadedSvcIds = new Set((d || []).map(i => String((i && i['ID']) ?? '')));
 			allSvc = d.filter(i => String(i['分類'] || '') === cat);
 		}
 	} catch (e) {
@@ -1101,9 +1114,17 @@ function copyUrlToClipboard(relativeUrl) {
 	});
 }
 
+function nowDateStr() {
+	const d = new Date();
+	const pad = (n) => String(n).padStart(2, '0');
+	return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 function collectFields() {
 	const out = {};
 	$('modalFields').querySelectorAll('[data-k]').forEach(el => { out[el.dataset.k] = el.value; });
+	// 新增時發佈日期若未填，自動帶入現在時間（否則靜態頁排序／預約發佈判斷會落後）
+	if (editing && editing.idx === -1 && !String(out['發佈日期'] || '').trim()) out['發佈日期'] = nowDateStr();
 	return out;
 }
 
@@ -1325,6 +1346,7 @@ export async function initAdmin(sess) {
 		if (cfg?.JsonData) jsonPostsPath = cfg.JsonData.replace(/^\//, '');
 		if (cfg?.JsonService) jsonSvcPath = cfg.JsonService.replace(/^\//, '');
 		if (cfg?.updateGithub_URL) authUrl = cfg.updateGithub_URL;
+		if (cfg?.SITE_BASE) initSiteBase(cfg.SITE_BASE);
 	} catch (e) { setStatus('⚠️ INI 載入失敗：' + e.message, 'orange'); }
 	renderOplog();
 

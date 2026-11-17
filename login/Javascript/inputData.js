@@ -324,7 +324,11 @@ window.sendData = async function() {
 		try {
 			const newPost = publishedPost; // 剛附加的文章
 			if (newPost) {
-				const { buildArticleHtml, getCombinedId } = await import('/Javascript/buildArticle.js');
+				const { buildArticleHtml, getCombinedId, initSiteBase } = await import('/Javascript/buildArticle.js');
+				try {
+					const cfg = await (await import('/Javascript/global.js')).getIni('/settings/global.ini');
+					if (cfg && cfg.SITE_BASE) initSiteBase(cfg.SITE_BASE);
+				} catch (e) {}
 				const html = buildArticleHtml(newPost);
 				if (html) {
 					const staticPath = 'ghoststory/article/' + getCombinedId(newPost) + '.html';

@@ -6,9 +6,9 @@
     <meta name="robots" content="noindex, follow">
     <title>迷失方向 - 鬼磕頭</title>
 
-    <link rel="icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="https://spiritref.github.io/GhostKowtow.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" href="https://spiritref.github.io/GhostKowtow.jpg">
+    <link rel="icon" href="/GhostKowtow.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/GhostKowtow.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="/GhostKowtow.jpg">
     <style>
         body {
             background-color: #f8f9fa;
@@ -41,7 +41,7 @@
     <div class="container">
         <h1>此路不通</h1>
         <p>您似乎誤入了迷霧之中...<br>將在 <span id="timer" class="countdown">3</span> 秒後帶您回到人間。</p>
-        <p><a href="https://spiritref.github.io/services/" class="link">直接返回官網首頁</a></p>
+        <p><a href="/services/" class="link">直接返回官網首頁</a></p>
     </div>
 
     <script>
@@ -53,8 +53,8 @@
             timerElement.textContent = timeLeft;
             if (timeLeft <= 0) {
                 clearInterval(countdown);
-                // window.location.href = "https://spiritref.github.io/services/";
-                window.location.replace("https://spiritref.github.io/services/");
+                // window.location.href = "/services/";
+                window.location.replace("/services/");
             }
         }, 1000);
     </script>
