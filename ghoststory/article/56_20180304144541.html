@@ -144,7 +144,7 @@ h1#art-title { font-size: 1.5rem; line-height: 1.4; color: var(--text-title); ma
     window.addEventListener('DOMContentLoaded', () => {
         applySettings();
         const from = new URLSearchParams(window.location.search).get('from');
-        const back = document.querySelector('.article-container .back-home');
+        const back = document.querySelector('.container .back-home');
         if (from === 'notices' && back) { back.href = '/services/notices/'; back.innerHTML = '← 返回公告記錄'; }
         else if (from === 'compendium' && back) { back.href = '/services/compendium/'; back.innerHTML = '← 超自然現象彙典'; }
         getIni('/settings/global.ini').then(config => {
