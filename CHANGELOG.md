@@ -5,6 +5,10 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.19 — 2026/11/19 00:21
+
+1. services/index.html：加 preconnect hinet，對 Supabase／jsdelivr／ipapi.co 提前建立連線，減少首次請求延遲
+
 ## V3.18 — 2026/11/19 00:14
 
 1. 分析追蹤延後到 requestIdleCallback（瀏覽器空檔）執行：FCP／LCP 不再受 Supabase／ipapi.co 影響，TBT 帳面上會顯著下降
