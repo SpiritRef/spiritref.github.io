@@ -121,6 +121,8 @@
 		<button class="sidebar-btn active" data-panel="panelOverview">🏠 總覽</button>
 		<button class="sidebar-btn" data-panel="panelArticles">🔥 熱門文章</button>
 		<button class="sidebar-btn" data-panel="panelCompendium">📖 熱門彙典</button>
+		<button class="sidebar-btn" data-panel="panelAbility">⛰️ 熱門服務</button>
+		<button class="sidebar-btn" data-panel="panelVision">💡 熱門視覺紀錄</button>
 		<button class="sidebar-btn" data-panel="panelRecent">📑 最近事件</button>
 		<button class="sidebar-btn" data-panel="panelVisitors">👤 訪客</button>
 		<div class="back-admin">
@@ -209,6 +211,22 @@
 			<div class="card">
 				<h2>📖 熱門彙典 Top 100</h2>
 				<div id="topCompendium"></div>
+			</div>
+		</section>
+
+		<!-- 熱門服務 -->
+		<section id="panelAbility" class="panel" style="display:none;">
+			<div class="card">
+				<h2>⛰️ 熱門服務 Top 100</h2>
+				<div id="topAbility"></div>
+			</div>
+		</section>
+
+		<!-- 熱門視覺紀錄 -->
+		<section id="panelVision" class="panel" style="display:none;">
+			<div class="card">
+				<h2>💡 熱門視覺紀錄 Top 100</h2>
+				<div id="topVision"></div>
 			</div>
 		</section>
 
@@ -773,9 +791,12 @@
 			}
 		}
 
-		// --- Top articles & compendium (Top 100) ---
+		// --- Top articles & service detail rankings (Top 100，依 ID 前綴分三類) ---
 		const articleCount = {};
+		const abilityCount = {};
+		const visionCount = {};
 		const compendiumCount = {};
+		const bump = (bucket, id) => { bucket[id] = (bucket[id] || 0) + 1; };
 		items.forEach(i => {
 			const raw = i.page_url || '/';
 			const path = raw.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
@@ -788,18 +809,24 @@
 				if (!pid) return;
 				const postId = pid.includes('_') ? pid.split('_')[0] : pid;
 				const isFromNotices = (q.from === 'notices') || (postId && announcementIds.has(postId));
-				if (!isFromNotices) articleCount[pid] = (articleCount[pid] || 0) + 1;
+				if (!isFromNotices) bump(articleCount, pid);
 				return;
 			}
-			// 服務詳細頁：寫靜態 HTML 的各檔案
+			// 靜態服務頁：Ability_* / Vision_* / Compendium_* 分類
 			const svc = path.match(/^\/services\/(?:ability|vision|compendium)\/((?:Ability|Vision|Compendium)_\d{3})\.html$/);
 			if (svc) {
-				compendiumCount[svc[1]] = (compendiumCount[svc[1]] || 0) + 1;
+				const id = svc[1];
+				if (id.startsWith('Ability_')) bump(abilityCount, id);
+				else if (id.startsWith('Vision_')) bump(visionCount, id);
+				else bump(compendiumCount, id);
 				return;
 			}
-			// 舊版 detail.html?id= 也收進來
+			// 舊版 detail.html?id=
 			if (path.startsWith('/services/compendium/detail.html') && q.id) {
-				compendiumCount[String(q.id)] = (compendiumCount[String(q.id)] || 0) + 1;
+				const id = String(q.id);
+				if (/^Ability_\d{3}$/.test(id)) bump(abilityCount, id);
+				else if (/^Vision_\d{3}$/.test(id)) bump(visionCount, id);
+				else if (/^Compendium_\d{3}$/.test(id)) bump(compendiumCount, id);
 			}
 		});
 
@@ -829,27 +856,37 @@
 			</li>
 		`).join('') : '<div style="color:#8b7355;">尚無文章資料</div>';
 
-		const compendiumRank = Object.entries(compendiumCount)
+		// 服務／視覺紀錄／彙典 三種排行共用 buildServiceRank
+		const buildServiceRank = (counts, dir, label) => Object.entries(counts)
 			.filter(([id]) => servicesMap.has(String(id)))
 			.sort((a, b) => b[1] - a[1])
 			.slice(0, 100)
 			.map(([id, count]) => {
 				const s = servicesMap.get(String(id)) || {};
 				const title = s['標題'] || `ID ${id}`;
-				const url = `/services/compendium/${encodeURIComponent(id)}.html`;
+				const url = `/services/${dir}/${encodeURIComponent(id)}.html`;
 				const excerpt = (s['貼文內容'] || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').slice(0, 80).trim();
-				return { id, title, url, excerpt, count };
+				return { id, title, url, excerpt, count, viewLabel: label };
 			});
-		$('topCompendium').innerHTML = compendiumRank.length ? '<ol class="rank-list">' + compendiumRank.map((r, i) => `
-			<li class="rank-item">
-				<div class="rank-num">${i + 1}</div>
-				<div class="rank-body">
-					<div class="rank-title">${esc(r.title)}</div>
-					${r.excerpt ? `<div class="rank-desc">${esc(r.excerpt)}</div>` : ''}
-					<div class="rank-meta">瀏覽 ${r.count} 次 · <a href="${esc(r.url)}" target="_blank" rel="noopener">查看彙典</a></div>
-				</div>
-			</li>
-		`).join('') : '<div style="color:#8b7355;">尚無彙典資料</div>';
+		const abilityRank = buildServiceRank(abilityCount, 'ability', '服務');
+		const visionRank = buildServiceRank(visionCount, 'vision', '視覺紀錄');
+		const compendiumRank = buildServiceRank(compendiumCount, 'compendium', '彙典');
+		const renderServiceRank = (containerId, list, emptyText) => {
+			if (!$(containerId)) return;
+			$(containerId).innerHTML = list.length ? '<ol class="rank-list">' + list.map((r, i) => `
+				<li class="rank-item">
+					<div class="rank-num">${i + 1}</div>
+					<div class="rank-body">
+						<div class="rank-title">${esc(r.title)}</div>
+						${r.excerpt ? `<div class="rank-desc">${esc(r.excerpt)}</div>` : ''}
+						<div class="rank-meta">瀏覽 ${r.count} 次 · <a href="${esc(r.url)}" target="_blank" rel="noopener">查看${r.viewLabel}</a></div>
+					</div>
+				</li>
+			`).join('') : `<div style="color:#8b7355;">${esc(emptyText)}</div>`;
+		};
+		renderServiceRank('topAbility', abilityRank, '尚無服務資料');
+		renderServiceRank('topVision', visionRank, '尚無視覺紀錄資料');
+		renderServiceRank('topCompendium', compendiumRank, '尚無彙典資料');
 
 		const recent = [...items].slice(-100).reverse();
 		$('eventRows').innerHTML = recent.map(i => {
