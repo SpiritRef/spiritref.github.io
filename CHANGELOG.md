@@ -5,6 +5,14 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.21 — 2026/11/19 00:42
+
+1. 圖片傳輸大瘦身（原本約 2,411 KB → 約 686 KB，減少約 1.7 MB）：
+   - GhostKowtowWord.png：2629×798 → 792×240，979 KB → 200 KB
+   - pic/cloud.png：1607×555 → 720×249，623 KB → 223 KB
+   - pic/ghoststoryEntry.jpeg：2752×1536 → 1560×870，789 KB → 263 KB
+   （顯示實際尺寸遠比這樣大，縮小後不影響顯示銳利度）
+
 ## V3.20 — 2026/11/19 00:28
 
 1. 可用瀏覽器快取的請求全部改用 default cache（Data/Services.json、Data/postFB.json、settings/global.ini）— 不再每頁都重抓，304 Not Modified 直接從瀏覽器快取取出
