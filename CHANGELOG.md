@@ -5,6 +5,24 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.12 — 2026/11/18 22:37
+
+1. 後台登入後（requireAdmin 成功時），自動標記本裝置 analytics_optout：此裝置之前台瀏覽一律不計入前台分析（登出後也不會重新計算）
+2. 分析頁「這台裝置排除」提示文字更新
+3. 補充 V3.10、V3.11 changelog 紀錄
+
+## V3.11 — 2026/11/18 22:32 — 849be36
+
+1. 分析頁新增「⛰️ 熱門服務」「💡 熱門視覺紀錄」兩個面板及側邊按鈕（Top 100）
+2. 熱門彙典排行計數修正為只計算 Compendium_*（Ability／Vision 不再混入）
+3. Ability_*／Vision_* 各自命中對應面板（依 ID 前綴分流，含 detail.html?id= 相容路徑）
+
+## V3.10 — 2026/11/18 22:10 — 11ce6f7
+
+1. 新增 CHANGELOG.md，彙整 V3.0 起所有已推送版本紀錄
+2. 分析頁來源分佈改為雙路徑歸因（先看 referrer，缺失時 fallback 到事件落地網址的 UTM 參數）
+3. 分析頁文章／彙典排行改為同時計算靜態頁瀏覽（ghoststory/article/*.html、services/*/*.html），不再只看舊版 ?id= 與 detail.html
+
 ## V3.9 — 2026/11/18 21:53 — 18545dc
 
 1. 修正 descOf 截斷 emoji 的代理對導致描述含 U+FFFD 亂碼

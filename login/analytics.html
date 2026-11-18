@@ -288,8 +288,8 @@
 		const renderHint = () => {
 			if (!optoutHint) return;
 			optoutHint.textContent = optoutToggle.checked
-				? '✅ 這台裝置已排除：之後的瀏覽不會寫入 user_events'
-				: 'ℹ️ 這台裝置的瀏覽會照常記錄（勾選即停止記錄）';
+				? '✅ 這台裝置（已登入後台）／排除，之後的瀏覽不寫入 user_events'
+				: '登出不會自動重新計算：只要這台裝置登入過後台，前台瀏覽一律不記錄';
 		};
 		optoutToggle.addEventListener('change', () => {
 			try {

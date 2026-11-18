@@ -1,4 +1,4 @@
-import { getIni } from '/Javascript/global.js?v=20261118';
+import { getIni, setAnalyticsOptout } from '/Javascript/global.js?v=20261118';
 
 // 集中管理：優先讀 /settings/global.ini 的 SUPABASE_URL / SUPABASE_ANON_KEY，
 // INI 失效時才用下方備援值（換專案只改 INI 即可，不用動程式）。
@@ -63,6 +63,8 @@ export async function requireAdmin(loginPage = './') {
 		location.replace(`${loginPage}?next=${encodeURIComponent(next)}`);
 		return null;
 	}
+	// 這台裝置登入過後台 → 之後所有瀏覽都不計入前台分析（後台本身本來就不追蹤 /login/）
+	try { setAnalyticsOptout(true); } catch (e) {}
 	startIdleLogout(loginPage);
 	return session;
 }
