@@ -65,7 +65,11 @@ function plainText(raw) {
 }
 function descOf(raw) {
 	const plain = plainText(raw);
-	return (plain.length > 150 ? plain.slice(0, 150) + '…' : plain);
+	if (plain.length <= 150) return plain;
+	const slice = plain.slice(0, 150);
+	// 不要切在 emoji 的代理對中間
+	const last = slice.charCodeAt(slice.length - 1);
+	return ((last >= 0xD800 && last <= 0xDBFF) ? plain.slice(0, 149) : slice) + '…';
 }
 
 function absoluteImg(src) {
