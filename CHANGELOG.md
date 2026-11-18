@@ -5,6 +5,17 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.24 — 2026/11/19 01:18
+
+1. 共享 global.css：全站改用 `<link rel="preload" as="style" href="/CSS/global.css" onload="this.rel='stylesheet'">` + noscript 退路
+2. 停止在每個 HTML 內嵌 4 KB global.css 複本；與 `/ghoststory/article/` 重產模板鏈保持一致（SHA 420/420 byte-identical 已驗證）
+
+## V3.23 — 2026/11/19 01:13
+
+1. 首次算繪不阻塞 CSS link：全站 `/CSS/global.css` 直接 inline 進 `<style>` block 中，所有 static html 於 HTML 出來就完整可繪製
+2. `/services/CSS/Services.css` 與 `/services/CSS/cloud.css` 改採 `<link rel="preload" as="style" onload="this.rel='stylesheet'"> + <noscript>` fallback；佚到 JS 觸發 → `rel='stylesheet'` 切換，消除 render-blocking warning
+3. buildArticle.js 內嵌 `INLINE_GLOBAL_CSS` 常數與同步模板，未來的重產仍對齊至 inline block（SHA 420/420 byte-identical 已驗證）
+
 ## V3.22 — 2026/11/19 00:57
 
 1. 公開頁改寫埋點改為 PostgREST 直接 fetch：刪除 dynamic import cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm

@@ -19,9 +19,12 @@
     <link rel="apple-touch-icon" href="/GhostKowtow.jpg">
 
     <!-- 3. CSS 連結 (保持原樣) -->
-	<link rel="stylesheet" href="/CSS/global.css">
-    <link rel="stylesheet" href="CSS/Services.css?v=20261012c">
-    <link rel="stylesheet" href="CSS/cloud.css?v=20261011">
+	<link rel="preload" as="style" href="/CSS/global.css?v=20261012" onload="this.rel='stylesheet'">
+	<noscript><link rel="stylesheet" href="/CSS/global.css?v=20261012"></noscript>
+    <link rel="preload" as="style" href="CSS/Services.css?v=20261012c" onload="this.rel='stylesheet'">
+	<noscript><link rel="stylesheet" href="CSS/Services.css?v=20261012c"></noscript>
+    <link rel="preload" as="style" href="CSS/cloud.css?v=20261011" onload="this.rel='stylesheet'">
+	<noscript><link rel="stylesheet" href="CSS/cloud.css?v=20261011"></noscript>
     <style>
         /* 首頁內容框：淺灰半透明＋黑字（公告板、卡片維持原樣） */
         .container { background: rgba(216, 213, 208, 0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #222222; border-radius: 16px; }
