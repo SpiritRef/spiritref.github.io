@@ -170,7 +170,14 @@
 					<div class="card" style="margin-bottom:0;">
 						<div class="map-wrap"><div id="map"></div></div>
 						<div class="map-footer" style="margin-top:12px;"><strong>台灣各縣市訪客數（人）</strong></div>
-						<div class="geo-list" id="taiwanList"></div>
+						<div class="map-footer" style="margin-top:10px;margin-bottom:4px;"><strong style="color:#8b7355;">北部</strong></div>
+						<div class="geo-list" id="twNorth"></div>
+						<div class="map-footer" style="margin-top:10px;margin-bottom:4px;"><strong style="color:#8b7355;">中部</strong></div>
+						<div class="geo-list" id="twCentral"></div>
+						<div class="map-footer" style="margin-top:10px;margin-bottom:4px;"><strong style="color:#8b7355;">南部</strong></div>
+						<div class="geo-list" id="twSouth"></div>
+						<div class="map-footer" style="margin-top:10px;margin-bottom:4px;"><strong style="color:#8b7355;">其他</strong></div>
+						<div class="geo-list" id="twOther"></div>
 						<div class="map-footer" style="margin-top:12px;"><strong>海外地區訪客數（人）</strong></div>
 						<div class="geo-list" id="overseasList"></div>
 					</div>
@@ -272,7 +279,7 @@
 			map.setView(center, 12, { animate: true });
 		}
 	};
-	['taiwanList', 'overseasList'].forEach(id => {
+	['twNorth', 'twCentral', 'twSouth', 'twOther', 'overseasList'].forEach(id => {
 		const el = document.getElementById(id);
 		if (el) el.addEventListener('click', geoClickHandler);
 	});
@@ -658,6 +665,14 @@
 			}
 		});
 		cityCenters = {};
+		const zoneOf = (name) => {
+			const n = String(name || '').toLowerCase();
+			const has = (arr) => arr.some(s => n.includes(s));
+			if (has(['taipei', 'new taipei', 'banqiao', 'keelung', 'taoyuan', 'hsinchu', 'yilan', 'wugu', 'zhongli', 'tamshui', '新北', '台北', '基隆', '桃園', '新竹', '宜蘭', '中壢', '淡水'])) return 'twNorth';
+			if (has(['taichung', 'miaoli', 'changhua', 'yuanlin', 'nantou', 'douliu', 'taiwan_county', '台中', '苗栗', '彰化', '南投', '雲林', '員林', '斗六'])) return 'twCentral';
+			if (has(['tainan', 'kaohsiung', 'chiayi', 'pingtung', 'penghu', 'taitung', 'hualien', '台南', '高雄', '嘉義', '屏東', '澎湖', '台東', '花蓮'])) return 'twSouth';
+			return null;
+		};
 		const renderGeo = (rawMap, elId) => {
 			const list = Object.entries(rawMap)
 				.map(([name, v]) => {
@@ -674,7 +689,19 @@
 			const el = $(elId);
 			if (el) el.innerHTML = html;
 		};
-		renderGeo(taiwanMap, 'taiwanList');
+		// Taiwan：依 北／中／南 拆分；海外：同一個容器
+		const twNorth = {}, twCentral = {}, twSouth = {}, twOther = {};
+		for (const [name, v] of Object.entries(taiwanMap)) {
+			const z = zoneOf(name) || 'twOther';
+			if (z === 'twNorth') twNorth[name] = v;
+			else if (z === 'twCentral') twCentral[name] = v;
+			else if (z === 'twSouth') twSouth[name] = v;
+			else twOther[name] = v;
+		}
+		renderGeo(twNorth, 'twNorth');
+		renderGeo(twCentral, 'twCentral');
+		renderGeo(twSouth, 'twSouth');
+		renderGeo(twOther, 'twOther');
 		renderGeo(overseasMap, 'overseasList');
 		$('totalViews').innerText = total;
 		$('uniqueVisitors').innerText = uniqueSessions;
@@ -790,12 +817,7 @@
 					} catch (e) {
 						console.warn('熱力圖繪製失敗：', e);
 					}
-					try {
-						const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
-						if (!userFocusedCity && bounds.isValid()) map.fitBounds(bounds.pad(0.2));
-					} catch (e) {
-						console.warn('fitBounds 失敗：', e);
-					}
+					// 預設保持台灣視角；海外點可以放大後自行平移／縮放看
 				};
 
 				// 等地圖 size 算好、瀏覽器畫完下一幀再畫熱力圖，避免 canvas 寬度為 0
