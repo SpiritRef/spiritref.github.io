@@ -5,6 +5,12 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.17 — 2026/11/19 00:09
+
+1. services/index.html：主要 logo／入口圖片加上 width/height 屬性（修正 CLS 0.123 的根源）
+2. 移除 services/index.html 上多餘的未帶版本的 /Javascript/global.js 載入（瀏覽器原本會同時跑兩份 module）
+3. 移除與 Services.js 的 v=20261111b、cloud.js 的 v=20261104 不同步的引用（一律對齊到今日 v=20261120）
+
 ## V3.16 — 2026/11/19 00:01
 
 1. Lighthouse 可存取性：serviceBtn（主選單浮動按鈕）加 type="button" ＋ aria-label="主選單" ＋ title="主選單"（全站 429 頁 + 產生器同步）
