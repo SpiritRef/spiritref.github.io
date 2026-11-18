@@ -295,24 +295,45 @@
 	let userFocusedCity = false;
 
 	// ---------- helpers ----------
-	function referrerSource(ref) {
+	function referrerSource(ref, pageUrl) {
+		// 步驟 1：先看 referrer（從哪個頁面點過來）
 		const r = String(ref || '').trim();
-		if (!r) return '直接／未知來源';
 		let h = '';
 		try { h = new URL(r).hostname.replace(/^(www|m|web)\./i, '').toLowerCase(); } catch (e) {}
-		if (!h) return '直接／未知來源';
-		if (h.includes('google')) return '搜尋（Google）';
-		if (h.includes('bing')) return '搜尋（Bing）';
-		if (h.includes('duckduckgo')) return '搜尋（DuckDuckGo）';
-		if (h.includes('baidu')) return '搜尋（Baidu）';
-		if (h.includes('yahoo')) return '搜尋（Yahoo）';
-		if (h.includes('line')) return 'LINE';
-		if (h.includes('facebook') || h.includes('fb.me') || h === 'fb.com') return 'Facebook';
-		if (h.includes('instagram')) return 'Instagram';
-		if (h.includes('threads')) return 'Threads';
-		if (h.includes('youtube') || h.includes('youtu.be')) return 'YouTube';
-		if (h.includes('github.com')) return 'GitHub';
-		return h;
+		if (h) {
+			if (h.includes('google')) return '搜尋（Google）';
+			if (h.includes('bing')) return '搜尋（Bing）';
+			if (h.includes('duckduckgo')) return '搜尋（DuckDuckGo）';
+			if (h.includes('baidu')) return '搜尋（Baidu）';
+			if (h.includes('yahoo')) return '搜尋（Yahoo）';
+			if (h.includes('line')) return 'LINE';
+			if (h.includes('facebook') || h.includes('fb.me') || h === 'fb.com') return 'Facebook';
+			if (h.includes('instagram')) return 'Instagram';
+			if (h.includes('threads')) return 'Threads';
+			if (h.includes('youtube') || h.includes('youtu.be')) return 'YouTube';
+			if (h.includes('github.com')) return 'GitHub';
+			return h;
+		}
+		// 步驟 2：referrer 缺失時（LINE App 內瀏覽器常見），改從落地網址的 UTM 判斷
+		try {
+			const url = String(pageUrl || '');
+			const qs = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+			const p = new URLSearchParams(qs);
+			const s = String(p.get('utm_source') || p.get('utm_medium') || p.get('source') || p.get('ref') || '').toLowerCase();
+			if (s) {
+				if (/line/.test(s)) return 'LINE';
+				if (/google/.test(s)) return '搜尋（Google）';
+				if (/bing/.test(s)) return '搜尋（Bing）';
+				if (/baidu/.test(s)) return '搜尋（Baidu）';
+				if (/yahoo/.test(s)) return '搜尋（Yahoo）';
+				if (/faceb|fb/.test(s)) return 'Facebook';
+				if (/insta|ig/.test(s)) return 'Instagram';
+				if (/threads/.test(s)) return 'Threads';
+				if (/youtube|youtu/.test(s)) return 'YouTube';
+				return `UTM：${s}`;
+			}
+		} catch (e) {}
+		return '直接／未知來源';
 	}
 
 	function deviceLabel(ua) {
@@ -634,7 +655,7 @@
 		const devKnown = items.some(i => i.user_agent);
 		items.forEach(i => {
 			if (i.event_name !== 'Page_View') return;
-			const s = referrerSource(i.referrer);
+			const s = referrerSource(i.referrer, i.page_url);
 			const d = deviceLabel(i.user_agent);
 			srcCount[s] = (srcCount[s] || 0) + 1;
 			devCount[d] = (devCount[d] || 0) + 1;
@@ -756,15 +777,29 @@
 		const articleCount = {};
 		const compendiumCount = {};
 		items.forEach(i => {
-			const p = i.page_url || '/';
-			const q = parseQuery(p);
-			const pid = q.id ? String(q.id) : '';
-			const postId = pid.includes('_') ? pid.split('_')[0] : pid;
-			const isFromNotices = (q.from === 'notices') || (postId && announcementIds.has(postId));
-			if (p.startsWith('/ghoststory/article/') && postId && !isFromNotices) {
-				articleCount[pid] = (articleCount[pid] || 0) + 1;
-			} else if (p.startsWith('/services/compendium/detail.html') && pid) {
-				compendiumCount[pid] = (compendiumCount[pid] || 0) + 1;
+			const raw = i.page_url || '/';
+			const path = raw.split('?')[0].replace(/\/?index\.html$/, '/').replace(/\/+/g, '/');
+			const q = parseQuery(raw);
+
+			// 靜態文章頁 /ghoststory/article/100_20220607150154.html（相容 ?id=xxx 轉址）
+			if (path.startsWith('/ghoststory/article/') && path !== '/ghoststory/article/') {
+				const m = path.match(/(\d+_\d{14})\.html$/);
+				const pid = m ? m[1] : (q.id ? String(q.id) : '');
+				if (!pid) return;
+				const postId = pid.includes('_') ? pid.split('_')[0] : pid;
+				const isFromNotices = (q.from === 'notices') || (postId && announcementIds.has(postId));
+				if (!isFromNotices) articleCount[pid] = (articleCount[pid] || 0) + 1;
+				return;
+			}
+			// 服務詳細頁：寫靜態 HTML 的各檔案
+			const svc = path.match(/^\/services\/(?:ability|vision|compendium)\/((?:Ability|Vision|Compendium)_\d{3})\.html$/);
+			if (svc) {
+				compendiumCount[svc[1]] = (compendiumCount[svc[1]] || 0) + 1;
+				return;
+			}
+			// 舊版 detail.html?id= 也收進來
+			if (path.startsWith('/services/compendium/detail.html') && q.id) {
+				compendiumCount[String(q.id)] = (compendiumCount[String(q.id)] || 0) + 1;
 			}
 		});
 
