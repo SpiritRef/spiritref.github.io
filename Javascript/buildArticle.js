@@ -103,7 +103,7 @@ h1#art-title { font-size: 1.5rem; line-height: 1.4; color: var(--text-title); ma
 
 const ARTICLE_BODY_REGION = (backHref, backText, containerClass = 'article-container') => `<div class="expandable-menu-container" id="menuContainer">
     <div class="menu-content" id="menuContent"></div>
-    <button class="floating-service-btn" id="serviceBtn" onclick="toggleMenu()">
+    <button class="floating-service-btn" id="serviceBtn" type="button" onclick="toggleMenu()" aria-label="主選單" title="主選單">
         <span id="serviceIcon">
         <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -126,7 +126,7 @@ const ARTICLE_BODY_REGION = (backHref, backText, containerClass = 'article-conta
     </div>`;
 
 const ARTICLE_INTERACT = `<script type="module">
-    import { getIni } from '/Javascript/global.js?v=20261118';
+    import { getIni } from '/Javascript/global.js?v=20261119';
     window.toggleMenu = function() {
         const menu = document.getElementById('menuContainer');
         if (menu) menu.classList.toggle('show-menu');
@@ -280,7 +280,7 @@ export function buildCompendiumHtml(item) {
 			linksHtml = '<div class="compendium-links"><span>相關圖片：</span>' + urlArray.map(u => {
 				const src = rootRelAll(String(u).trim());
 				const path = /^(https?:)?\/\//.test(src) ? src : (src.startsWith('pic/') ? '/ghoststory/' + src : (src.startsWith('ghoststory/pic/') ? '/' + src : src));
-				return `<img src="${escapeHtml(path)}" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'">`;
+				return `<img src="${escapeHtml(path)}" alt="${escapeHtml(title)}" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'">`;
 			}).join('') + '</div>';
 		} else {
 			linksHtml = '<div class="compendium-links"><span>相關文章：</span>' + urlArray.map(u => {

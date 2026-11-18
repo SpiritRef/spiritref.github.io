@@ -77,7 +77,7 @@
 	
 <div class="expandable-menu-container" id="menuContainer">
 	<div class="menu-content" id="menuContent"></div>
-	<button class="floating-service-btn" id="serviceBtn" onclick="toggleMenu()">
+	<button class="floating-service-btn" id="serviceBtn" type="button" onclick="toggleMenu()" aria-label="主選單" title="主選單">
 		<span id="serviceIcon">
 	        <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
 	            <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -125,7 +125,7 @@
 </footer>
 	
 <script type="module">
-	import * as Global from '/Javascript/global.js?v=20261118';
+	import * as Global from '/Javascript/global.js?v=20261119';
 
 	let JSON_PATH = ""; // 💡 儲存 INI 裡的靜態 JSON 路徑
 	let allNotices = [];
@@ -325,7 +325,7 @@ window.changePageSize = () => {
 
 	window.addEventListener('DOMContentLoaded', init);
 </script>
-<script type="module" src="/Javascript/global.js?v=20261118"></script>
+<script type="module" src="/Javascript/global.js?v=20261119"></script>
 <script src="../Javascript/cloud.js?v=20261012"></script>
 </body>
 </html>

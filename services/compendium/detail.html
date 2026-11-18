@@ -38,7 +38,7 @@
 <div id="cloud-container"></div>
 <div class="expandable-menu-container" id="menuContainer">
     <div class="menu-content" id="menuContent"></div>
-    <button class="floating-service-btn" id="serviceBtn" onclick="toggleMenu()">
+    <button class="floating-service-btn" id="serviceBtn" type="button" onclick="toggleMenu()" aria-label="主選單" title="主選單">
         <span id="serviceIcon">
             <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -57,7 +57,7 @@
     <p>&copy; 2026 鬼磕頭. All Rights Reserved.</p>
 </footer>
 <script type="module">
-    import * as Global from '/Javascript/global.js?v=20261118';
+    import * as Global from '/Javascript/global.js?v=20261119';
     const iniPath = '/settings/global.ini';
     async function init() {
         try {
@@ -146,7 +146,7 @@
                         let src = u.trim();
                         if (src.startsWith('pic/')) src = '/ghoststory/' + src;
                         else if (src.startsWith('ghoststory/pic/')) src = '/' + src;
-                        return '<img src="' + src + '" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display=\'none\'">';
+                        return '<img src="' + src + '" alt="相關圖片" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display=\'none\'">';
                     }).join('') + '</div>';
                 }
                 return '<div class="compendium-links"><span>相關文章：</span>' + urlArray.map(u => {

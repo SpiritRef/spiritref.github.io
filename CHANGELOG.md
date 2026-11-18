@@ -5,6 +5,12 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.16 — 2026/11/19 00:01
+
+1. Lighthouse 可存取性：serviceBtn（主選單浮動按鈕）加 type="button" ＋ aria-label="主選單" ＋ title="主選單"（全站 429 頁 + 產生器同步）
+2. Lighthouse 效能：global.js 新增 module-level getIni 快取，整頁只再請求一次 /settings/global.ini；Service.js／postFB.js 在已抓最新資料時略過 refreshFromVersion（避免同一頁抓兩次 postFB.json／Services.json）
+3. iframe 加 title（影片紀錄），縮圖 img 補 alt（文章縮圖 / 彙典相關圖片 / 全站按鈕標籤）
+
 ## V3.15 — 2026/11/18 23:24
 
 1. 地圖預設縮放由 zoom 8 改為 zoom 7，初始視角可看到台灣全島

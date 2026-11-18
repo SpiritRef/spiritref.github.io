@@ -1,4 +1,4 @@
-import { getIni, getRemoteVersion, getCombinedId, formatDate, clearFrontendCache } from '/Javascript/global.js?v=20261118';
+import { getIni, getRemoteVersion, getCombinedId, formatDate, clearFrontendCache } from '/Javascript/global.js?v=20261119';
 
 let allPosts = [];
 let filteredPosts = [];
@@ -95,13 +95,15 @@ async function loadData() {
         } catch (e) { allPosts = []; }
     } 
 
+    let freshlyFetched = false;
     // B. 若無快取，則抓取靜態 JSON
     if (allPosts.length === 0 && JsonData) {
-        await fetchStaticJson(JsonData);
+        const fetched = await fetchStaticJson(JsonData);
+        freshlyFetched = Boolean(fetched);
     }
 
-    // C. 版本比對：有更新才重抓靜態 JSON
-    refreshFromVersion();
+    // C. 版本比對：有更新才重抓靜態 JSON（fresh fetch 後不重複抓）
+    if (!freshlyFetched) refreshFromVersion();
 }
 
 async function fetchStaticJson(url) {
@@ -251,7 +253,7 @@ function renderList(posts) {
             imgData.split(/\r?\n|\|/).slice(0, 3).forEach(src => {
                 const cleanSrc = src.trim();
                 if(cleanSrc) {
-                    imgHtml += `<img src="${cleanSrc}" class="thumb-img" loading="lazy" onerror="this.style.display='none'">`;
+                    imgHtml += `<img src="${cleanSrc}" class="thumb-img" alt="文章縮圖" loading="lazy" onerror="this.style.display='none'">`;
                 }
             });
             imgHtml += `</div>`;

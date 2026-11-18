@@ -3,12 +3,15 @@
  * @param {string} filePath - INI 檔案的路徑
  * @returns {Promise<Object>} - 回傳解析後的物件
  */
+let iniCache = new Map();
+
 export async function getIni(filePath) {
+	if (iniCache.has(filePath)) return iniCache.get(filePath);
 	try {
 		// 加入時間戳避免瀏覽器快取舊的設定
 		const response = await fetch(filePath + '?t=' + Date.now());
 		if (!response.ok) throw new Error(`找不到檔案: ${filePath}`);
-		
+
 		const text = await response.text();
 		const config = {};
 		const lines = text.split(/\r?\n/);
@@ -23,6 +26,8 @@ export async function getIni(filePath) {
 				config[key] = value;
 			}
 		});
+		// 已解析完，完整存進 module-level 快取，這樣整頁都只有一次 INI 請求
+		iniCache.set(filePath, config);
 		return config;
 	} catch (e) {
 		console.error("INI Error:", e);

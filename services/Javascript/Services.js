@@ -1,4 +1,4 @@
-import * as Global from '/Javascript/global.js?v=20261118';
+import * as Global from '/Javascript/global.js?v=20261119';
 
 window.addEventListener('pageshow', (e) => { if (e.persisted) refreshFromVersion(); });
 
@@ -45,10 +45,11 @@ async function initApp() {
             if (allServices.length === 0 && JsonServicePath) {
                 loadTasks.push(loadStaticData(JsonServicePath, 'service'));
             }
-            if (loadTasks.length > 0) await Promise.all(loadTasks);
+            let freshlyFetched = false;
+            if (loadTasks.length > 0) { freshlyFetched = true; await Promise.all(loadTasks); }
 
-            // 💡 第三階段：版本比對，有更新才重抓
-            refreshFromVersion();
+            // 💡 第三階段：版本比對，有更新才重抓（已 freshly 抓過就直接跳過，避免重複請求）
+            if (!freshlyFetched) refreshFromVersion();
         } else {
             throw new Error("INI 設定檔載入失敗");
         }
@@ -326,8 +327,8 @@ function renderVisualRecords(displayData, totalCount) {
             <div class="card">
                 ${embeds.length ? `
                     <div class="video-container" style="margin-bottom:10px; border-radius:8px; overflow:hidden;">
-                        <iframe width="100%" height="200" src="${embeds[0]}" 
-                            frameborder="0" allowfullscreen loading="lazy"></iframe>
+                        <iframe width="100%" height="200" src="${embeds[0]}"
+                            title="${title}" frameborder="0" allowfullscreen loading="lazy"></iframe>
                     </div>
                 ` : ''}
                 ${embeds.length > 1 ? `

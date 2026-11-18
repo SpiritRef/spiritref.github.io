@@ -48,7 +48,7 @@ body.dark-mode .compendium-links { border-top-color: #4a4238; color: #a89a8a; }
 <div id="cloud-container"></div>
 <div class="expandable-menu-container" id="menuContainer">
     <div class="menu-content" id="menuContent"></div>
-    <button class="floating-service-btn" id="serviceBtn" onclick="toggleMenu()">
+    <button class="floating-service-btn" id="serviceBtn" type="button" onclick="toggleMenu()" aria-label="主選單" title="主選單">
         <span id="serviceIcon">
         <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -105,7 +105,7 @@ D.總是睡不飽
 
 如果你也有睡眠的問題
 或許可以想想會不會是有靈界的干擾</div>
-        <div class="compendium-links"><span>相關圖片：</span><img src="/ghoststory/pic/20261110235359.jpeg" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'"></div>
+        <div class="compendium-links"><span>相關圖片：</span><img src="/ghoststory/pic/20261110235359.jpeg" alt="你晚上也睡不好嗎？" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'"></div>
     </div>
 </div>
 
@@ -113,7 +113,7 @@ D.總是睡不飽
     <p>&copy; 2026 鬼磕頭. All Rights Reserved.</p>
 </footer>
 <script type="module">
-    import { getIni } from '/Javascript/global.js?v=20261118';
+    import { getIni } from '/Javascript/global.js?v=20261119';
     window.toggleMenu = function() {
         const menu = document.getElementById('menuContainer');
         if (menu) menu.classList.toggle('show-menu');
