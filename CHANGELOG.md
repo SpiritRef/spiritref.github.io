@@ -5,6 +5,10 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.25 — 2026/11/19 01:27
+
+1. 還原為 plain blocking CSS：`/CSS/global.css`、`/services/CSS/Services.css`、`/services/CSS/cloud.css` 皆以 `<link rel="stylesheet">` 直接注入，不用 preload onload 轉換（V3.24 的 preload pattern 造成 CLS 0.43、LCP 9.5 秒、Performance 55 嚴重退化；V3.25 恢復至 V3.22/V3.23 已知的穩定狀態 ~2.6s LCP）
+
 ## V3.24 — 2026/11/19 01:18
 
 1. 共享 global.css：全站改用 `<link rel="preload" as="style" href="/CSS/global.css" onload="this.rel='stylesheet'">` + noscript 退路

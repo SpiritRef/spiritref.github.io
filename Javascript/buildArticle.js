@@ -211,8 +211,7 @@ function articleHead({ title, desc, pageUrl, ogType, imgUrl }) {
     <meta name="twitter:image" content="${img}">
     <link rel="canonical" href="${pageUrl}">
 
-	<link rel="preload" as="style" href="/CSS/global.css?v=20261011" onload="this.rel='stylesheet'">
-	<noscript><link rel="stylesheet" href="/CSS/global.css?v=20261011"></noscript>
+	<link rel="stylesheet" href="/CSS/global.css?v=20261011">
     <link rel="stylesheet" href="/ghoststory/CSS/postFB.css?v=20261011">`;
 }
 
@@ -350,12 +349,9 @@ body.dark-mode .compendium-links { border-top-color: #4a4238; color: #a89a8a; }
     <meta name="twitter:description" content="${escapeHtml(desc)}">
     <meta name="twitter:image" content="${escapeHtml(imgUrl)}">
     <link rel="canonical" href="${pageUrl}">
-    <link rel="preload" as="style" href="/CSS/global.css?v=20261012" onload="this.rel='stylesheet'">
-	<noscript><link rel="stylesheet" href="/CSS/global.css?v=20261012"></noscript>
-    <link rel="preload" as="style" href="../CSS/Services.css?v=20261012" onload="this.rel='stylesheet'">
-	<noscript><link rel="stylesheet" href="../CSS/Services.css?v=20261012"></noscript>
-    <link rel="preload" as="style" href="../CSS/cloud.css?v=20261012" onload="this.rel='stylesheet'">
-	<noscript><link rel="stylesheet" href="../CSS/cloud.css?v=20261012"></noscript>
+    <link rel="stylesheet" href="/CSS/global.css?v=20261012">
+    <link rel="stylesheet" href="../CSS/Services.css?v=20261012">
+    <link rel="stylesheet" href="../CSS/cloud.css?v=20261012">
     <style>
 ${COMPENDIUM_BASE_STYLE}
 ${COMPENDIUM_EXTRA_STYLE}
