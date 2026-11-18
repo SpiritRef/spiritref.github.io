@@ -1,4 +1,4 @@
-import * as Global from '/Javascript/global.js?v=20261121';
+import * as Global from '/Javascript/global.js?v=20261122';
 
 window.addEventListener('pageshow', (e) => { if (e.persisted) refreshFromVersion(); });
 

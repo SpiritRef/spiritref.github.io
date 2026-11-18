@@ -1,4 +1,4 @@
-import { getIni, getCombinedId } from '/Javascript/global.js?v=20261121';
+import { getIni, getCombinedId } from '/Javascript/global.js?v=20261122';
 import { buildSitemapXml } from '/Javascript/sitemap.js?v=20261118';
 import { buildArticleHtml, buildCompendiumHtml, isPublished, serviceDetailPath, initSiteBase } from '/Javascript/buildArticle.js?v=20261118';
 import { GITHUB_USER, JSON_REPO, ghHeaders, toB64, fromB64, fetchJson, netInfo } from '/Javascript/adminCommon.js?v=20261212';

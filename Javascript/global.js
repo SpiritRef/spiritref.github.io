@@ -143,11 +143,9 @@ export function clearFrontendCache() {
 // ---------- 全站分析追蹤 ----------
 const ANALYTICS_FALLBACK_URL = 'https://ocqycgcatxdbpffpxdva.supabase.co';
 const ANALYTICS_FALLBACK_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jcXljZ2NhdHhkYnBmZnB4ZHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NjcxODksImV4cCI6MjEwNzA0MzE4OX0.ZmE5XI1LZdnZ3LagFDhcqaLqh-u3T8dtIFyBTHYzDOw';
-let _analyticsClient = null;
 
-async function _getAnalyticsClient() {
-	if (_analyticsClient) return _analyticsClient;
-	const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+// 公開頁不再載入整包 supabase-js（~74 KiB），改用 PostgREST 直接 insert
+async function _getSupabaseConfig() {
 	let url = ANALYTICS_FALLBACK_URL;
 	let key = ANALYTICS_FALLBACK_ANON;
 	try {
@@ -155,8 +153,26 @@ async function _getAnalyticsClient() {
 		if (cfg?.SUPABASE_URL) url = cfg.SUPABASE_URL;
 		if (cfg?.SUPABASE_ANON_KEY) key = cfg.SUPABASE_ANON_KEY;
 	} catch (e) {}
-	_analyticsClient = createClient(url, key);
-	return _analyticsClient;
+	return { url, key };
+}
+
+async function _sendEvent(payload) {
+	const { url, key } = await _getSupabaseConfig();
+	const res = await fetch(`${url}/rest/v1/user_events`, {
+		method: 'POST',
+		headers: {
+			apikey: key,
+			Authorization: 'Bearer ' + key,
+			'Content-Type': 'application/json',
+			Prefer: 'return=minimal'
+		},
+		body: JSON.stringify(payload),
+		keepalive: true // beforeunload 時瀏覽器仍會送出
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => '');
+		console.warn('Analytics 寫入失敗:', res.status, text);
+	}
 }
 
 function _getSessionId() {
@@ -190,7 +206,6 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 	if (window.location.pathname.startsWith('/login/')) return; // 不追蹤後台
 	if (analyticsOptedOut()) return; // 這台裝置已設為排除
 	try {
-		const sb = await _getAnalyticsClient();
 		const payload = {
 			event_name: eventName,
 			stay_time_seconds: stayTime,
@@ -229,8 +244,7 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 			} catch (e) { console.warn('IP 服務讀取失敗:', e); }
 		}
 
-		const { error } = await sb.from('user_events').insert([payload]);
-		if (error) console.warn('Analytics 寫入失敗:', error);
+		await _sendEvent(payload);
 	} catch (e) {
 		console.warn('Analytics 失敗:', e);
 	}

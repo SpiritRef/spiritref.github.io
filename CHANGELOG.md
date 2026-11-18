@@ -5,6 +5,12 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.22 — 2026/11/19 00:57
+
+1. 公開頁改寫埋點改為 PostgREST 直接 fetch：刪除 dynamic import cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm
+2. 移除 module-level _getAnalyticsClient() 委派邏輯，改寫為 _getSupabaseConfig() / _sendEvent()
+3. 全站 global.js?v=20261122 同步 v=20261122 戳記
+
 ## V3.21 — 2026/11/19 00:42
 
 1. 圖片傳輸大瘦身（原本約 2,411 KB → 約 686 KB，減少約 1.7 MB）：

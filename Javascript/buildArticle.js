@@ -126,7 +126,7 @@ const ARTICLE_BODY_REGION = (backHref, backText, containerClass = 'article-conta
     </div>`;
 
 const ARTICLE_INTERACT = `<script type="module">
-    import { getIni } from '/Javascript/global.js?v=20261121';
+    import { getIni } from '/Javascript/global.js?v=20261122';
     window.toggleMenu = function() {
         const menu = document.getElementById('menuContainer');
         if (menu) menu.classList.toggle('show-menu');
