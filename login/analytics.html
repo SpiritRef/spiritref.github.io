@@ -769,6 +769,10 @@
 		});
 
 		const articleRank = Object.entries(articleCount)
+			.filter(([id]) => {
+				const postId = id.includes('_') ? id.split('_')[0] : id;
+				return postsMap.has(String(postId));
+			})
 			.sort((a, b) => b[1] - a[1])
 			.slice(0, 100)
 			.map(([id, count]) => {
@@ -791,6 +795,7 @@
 		`).join('') : '<div style="color:#8b7355;">尚無文章資料</div>';
 
 		const compendiumRank = Object.entries(compendiumCount)
+			.filter(([id]) => servicesMap.has(String(id)))
 			.sort((a, b) => b[1] - a[1])
 			.slice(0, 100)
 			.map(([id, count]) => {
