@@ -1,4 +1,4 @@
-import { getIni, getRemoteVersion, getCombinedId, formatDate, clearFrontendCache } from '/Javascript/global.js?v=20261119';
+import { getIni, getRemoteVersion, getCombinedId, formatDate, clearFrontendCache } from '/Javascript/global.js?v=20261120';
 
 let allPosts = [];
 let filteredPosts = [];

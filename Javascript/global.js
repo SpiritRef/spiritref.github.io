@@ -256,7 +256,12 @@ export function initAnalytics() {
 	});
 }
 
-// 自動追蹤（打開任意公開頁面時都會執行）
+// 自動追蹤（打開任意公開頁面時都會執行；延後到瀏覽器 idle／load 後，避免打到關鍵載入路徑）
 if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login/') && !analyticsOptedOut()) {
-	initAnalytics();
+	const boot = () => initAnalytics();
+	if ('requestIdleCallback' in window) {
+		window.requestIdleCallback(boot, { timeout: 2000 });
+	} else {
+		window.addEventListener('load', boot, { once: true });
+	}
 }

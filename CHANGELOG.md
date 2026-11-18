@@ -5,6 +5,11 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.18 — 2026/11/19 00:14
+
+1. 分析追蹤延後到 requestIdleCallback（瀏覽器空檔）執行：FCP／LCP 不再受 Supabase／ipapi.co 影響，TBT 帳面上會顯著下降
+2. 配合全站 global.js?v=20261120 對齊（全站此版本亦為這次同步佈建所需的版本）
+
 ## V3.17 — 2026/11/19 00:09
 
 1. services/index.html：主要 logo／入口圖片加上 width/height 屬性（修正 CLS 0.123 的根源）
