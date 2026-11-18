@@ -1,4 +1,4 @@
-import * as Global from '/Javascript/global.js?v=20261120';
+import * as Global from '/Javascript/global.js?v=20261121';
 
 window.addEventListener('pageshow', (e) => { if (e.persisted) refreshFromVersion(); });
 
@@ -105,8 +105,7 @@ function processServiceData(data) {
  */
 async function loadStaticData(path, type) {
     try {
-        const sep = path.includes('?') ? '&' : '?';
-        const res = await fetch(`${path}${sep}t=${Date.now()}`, { cache: 'no-store' });
+        const res = await fetch(path, { cache: 'default' });
         if (!res.ok) return;
         const data = await res.json();
         

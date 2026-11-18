@@ -1,4 +1,4 @@
-import { getIni, getRemoteVersion, getCombinedId, formatDate, clearFrontendCache } from '/Javascript/global.js?v=20261120';
+import { getIni, getRemoteVersion, getCombinedId, formatDate, clearFrontendCache } from '/Javascript/global.js?v=20261121';
 
 let allPosts = [];
 let filteredPosts = [];
@@ -108,8 +108,7 @@ async function loadData() {
 
 async function fetchStaticJson(url) {
     try {
-        const sep = url.includes('?') ? '&' : '?';
-        const res = await fetch(`${url}${sep}t=${Date.now()}`, { cache: 'no-store' });
+        const res = await fetch(url, { cache: 'default' });
         if (!res.ok) return false;
         const data = await res.json();
         if (!Array.isArray(data)) return false;

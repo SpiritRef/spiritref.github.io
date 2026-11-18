@@ -8,8 +8,8 @@ let iniCache = new Map();
 export async function getIni(filePath) {
 	if (iniCache.has(filePath)) return iniCache.get(filePath);
 	try {
-		// 加入時間戳避免瀏覽器快取舊的設定
-		const response = await fetch(filePath + '?t=' + Date.now());
+		// 拿掉 ?t= 競速器：依賴 module-level cache（同頁只一次）+ browser default cache + GitHub Pages Last-Modified
+		const response = await fetch(filePath, { cache: 'default' });
 		if (!response.ok) throw new Error(`找不到檔案: ${filePath}`);
 
 		const text = await response.text();

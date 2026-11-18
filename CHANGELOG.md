@@ -5,6 +5,11 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.20 — 2026/11/19 00:28
+
+1. 可用瀏覽器快取的請求全部改用 default cache（Data/Services.json、Data/postFB.json、settings/global.ini）— 不再每頁都重抓，304 Not Modified 直接從瀏覽器快取取出
+2. 配合全站 global.js?v=20261121 對齊
+
 ## V3.19 — 2026/11/19 00:21
 
 1. services/index.html：加 preconnect hinet，對 Supabase／jsdelivr／ipapi.co 提前建立連線，減少首次請求延遲
