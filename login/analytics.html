@@ -96,6 +96,7 @@
 		.back-admin .sidebar-btn:hover { background: rgba(139, 115, 85, 0.1); }
 		.back-admin .logout { color:#b04a3a; }
 		.back-admin .logout:hover { background: rgba(176, 74, 58, 0.1); }
+		.duo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 4px; }
 
 		/* 手機版響應式（需在基底規則之後，利用 cascade 覆蓋） */
 		@media (max-width: 900px) {
@@ -140,7 +141,12 @@
 				<option value="90">最近 90 天</option>
 			</select>
 			<button id="reloadBtn">🔄 重新載入</button>
+			<label class="toolbar-check" style="margin-left:auto; font-size:13px; color:#4a2e1b; display:flex; align-items:center; gap:6px; cursor:pointer;" title="勾選後，此瀏覽器之後的瀏覽不會寫入 user_events（只影響這台裝置這個瀏覽器）">
+				<input type="checkbox" id="optoutToggle">
+				<span>🙉 這台裝置排除（我的瀏覽不計入）</span>
+			</label>
 		</div>
+		<div class="unit" id="optoutHint" style="margin: -4px 0 12px; text-align:right;"></div>
 
 		<!-- 總覽 -->
 		<section id="panelOverview" class="panel active">
@@ -176,6 +182,16 @@
 						</div>
 						<div id="topPagesDetailBody"></div>
 					</div>
+				</div>
+			</div>
+			<div class="duo-grid">
+				<div>
+					<h3>🌐 來源分佈（Page_View）</h3>
+					<div class="geo-list" id="sourceList"></div>
+				</div>
+				<div>
+					<h3>📱 裝置・瀏覽器（Page_View）</h3>
+					<div class="geo-list" id="deviceList"></div>
 				</div>
 			</div>
 		</section>
@@ -245,6 +261,28 @@
 		if (b) b.style.display = 'none';
 	});
 
+	// 「這台裝置不計入分析」開關（localStorage：analytics_optout）
+	const OPTOUT_KEY = 'analytics_optout';
+	const optoutToggle = $('optoutToggle');
+	const optoutHint = $('optoutHint');
+	if (optoutToggle) {
+		try { optoutToggle.checked = localStorage.getItem(OPTOUT_KEY) === '1'; } catch (e) { optoutToggle.checked = false; }
+		const renderHint = () => {
+			if (!optoutHint) return;
+			optoutHint.textContent = optoutToggle.checked
+				? '✅ 這台裝置已排除：之後的瀏覽不會寫入 user_events'
+				: 'ℹ️ 這台裝置的瀏覽會照常記錄（勾選即停止記錄）';
+		};
+		optoutToggle.addEventListener('change', () => {
+			try {
+				if (optoutToggle.checked) localStorage.setItem(OPTOUT_KEY, '1');
+				else localStorage.removeItem(OPTOUT_KEY);
+			} catch (e) {}
+			renderHint();
+		});
+		renderHint();
+	}
+
 	let chartTrend = null;
 	let chartPages = null;
 	let map = null;
@@ -257,6 +295,57 @@
 	let userFocusedCity = false;
 
 	// ---------- helpers ----------
+	function referrerSource(ref) {
+		const r = String(ref || '').trim();
+		if (!r) return '直接／未知來源';
+		let h = '';
+		try { h = new URL(r).hostname.replace(/^(www|m|web)\./i, '').toLowerCase(); } catch (e) {}
+		if (!h) return '直接／未知來源';
+		if (h.includes('google')) return '搜尋（Google）';
+		if (h.includes('bing')) return '搜尋（Bing）';
+		if (h.includes('duckduckgo')) return '搜尋（DuckDuckGo）';
+		if (h.includes('baidu')) return '搜尋（Baidu）';
+		if (h.includes('yahoo')) return '搜尋（Yahoo）';
+		if (h.includes('line')) return 'LINE';
+		if (h.includes('facebook') || h.includes('fb.me') || h === 'fb.com') return 'Facebook';
+		if (h.includes('instagram')) return 'Instagram';
+		if (h.includes('threads')) return 'Threads';
+		if (h.includes('youtube') || h.includes('youtu.be')) return 'YouTube';
+		if (h.includes('github.com')) return 'GitHub';
+		return h;
+	}
+
+	function deviceLabel(ua) {
+		const s = String(ua || '');
+		if (!s || s.trim() === '' || s.length < 4) return '—';
+		const o = s.includes('Android') ? 'Android'
+			: /iPhone/i.test(s) ? 'iPhone'
+			: /iPad/i.test(s) ? 'iPad'
+			: /Windows NT/i.test(s) ? 'Windows'
+			: /Mac OS X|Macintosh/i.test(s) ? 'Mac'
+			: /Linux/i.test(s) ? 'Linux' : '其他裝置';
+		const b = /Edg\//.test(s) ? 'Edge'
+			: /Firefox\//.test(s) ? 'Firefox'
+			: /Chrome\//.test(s) ? 'Chrome'
+			: /Safari\//.test(s) ? 'Safari' : '其他瀏覽器';
+		return `${o} · ${b}`;
+	}
+
+	function renderList(rootId, counts, known) {
+		const root = $(rootId);
+		if (!root) return;
+		if (!known) {
+			root.innerHTML = '<div class="geo-pill" style="opacity:.8;">尚無新資料（先在 Supabase 把 user_events 加上 referrer / user_agent / language 三欄，等有新事件再看）</div>';
+			return;
+		}
+		const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+		if (!rows.length) {
+			root.innerHTML = '<span style="color:#8b7355;">尚無資料</span>';
+			return;
+		}
+		root.innerHTML = rows.slice(0, 12).map(([k, v]) => `<span class="geo-pill">${esc(k)} · <strong>${v}</strong></span>`).join('');
+	}
+
 	async function fetchJson(url) {
 		try {
 			const r = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
@@ -537,6 +626,21 @@
 		$('avgStay').innerText = avg + 's';
 		$('todayViews').innerText = today;
 		$('uniqueVisitorsLarge').innerText = uniqueSessions;
+
+		// 來源分佈與裝置分佈（只算 Page_View；欄位未擴充前顯示未擴充提示）
+		const srcCount = {};
+		const devCount = {};
+		const srcKnown = items.some(i => i.referrer);
+		const devKnown = items.some(i => i.user_agent);
+		items.forEach(i => {
+			if (i.event_name !== 'Page_View') return;
+			const s = referrerSource(i.referrer);
+			const d = deviceLabel(i.user_agent);
+			srcCount[s] = (srcCount[s] || 0) + 1;
+			devCount[d] = (devCount[d] || 0) + 1;
+		});
+		renderList('sourceList', srcCount, srcKnown);
+		renderList('deviceList', devCount, devKnown);
 
 		itemsCache = items;
 		postsMapCache = postsMap;

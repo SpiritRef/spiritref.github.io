@@ -164,6 +164,18 @@ function _getSessionId() {
 	return sid;
 }
 
+// ---------- 自己的裝置不計入分析（localStorage 開關）----------
+const ANALYTICS_OPTOUT_KEY = 'analytics_optout';
+export function analyticsOptedOut() {
+	try { return typeof localStorage !== 'undefined' && localStorage.getItem(ANALYTICS_OPTOUT_KEY) === '1'; } catch (e) { return false; }
+}
+export function setAnalyticsOptout(on) {
+	try {
+		if (on) localStorage.setItem(ANALYTICS_OPTOUT_KEY, '1');
+		else localStorage.removeItem(ANALYTICS_OPTOUT_KEY);
+	} catch (e) {}
+}
+
 function _fullPageUrl() {
 	return (typeof window !== 'undefined') ? (window.location.pathname + window.location.search) : '';
 }
@@ -171,6 +183,7 @@ function _fullPageUrl() {
 export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl()) {
 	if (typeof window === 'undefined') return;
 	if (window.location.pathname.startsWith('/login/')) return; // 不追蹤後台
+	if (analyticsOptedOut()) return; // 這台裝置已設為排除
 	try {
 		const sb = await _getAnalyticsClient();
 		const payload = {
@@ -181,6 +194,11 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 
 		// session id（同一個分頁同一個）
 		payload.session_id = _getSessionId();
+
+		// 來源／裝置／語系（供統計渠道來源與裝置比例；需 user_events 表有對應欄位，否則寫入會失敗）
+		try { payload.referrer = (typeof document !== 'undefined' && document.referrer) ? document.referrer : null; } catch (e) { payload.referrer = null; }
+		try { payload.user_agent = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : null; } catch (e) { payload.user_agent = null; }
+		try { payload.language = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || null; } catch (e) { payload.language = null; }
 
 		// 地理座標：每個瀏覽器分頁只抓一次
 		const geoCache = sessionStorage.getItem('user_geo_cache');
@@ -216,6 +234,7 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 export function initAnalytics() {
 	if (typeof window === 'undefined') return;
 	if (window.location.pathname.startsWith('/login/')) return;
+	if (analyticsOptedOut()) return; // 這台裝置已設為排除
 
 	const fullUrl = _fullPageUrl();
 	// 同一個分頁同一篇文章只計一次 Page_View
@@ -233,6 +252,6 @@ export function initAnalytics() {
 }
 
 // 自動追蹤（打開任意公開頁面時都會執行）
-if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login/')) {
+if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login/') && !analyticsOptedOut()) {
 	initAnalytics();
 }
