@@ -5,6 +5,13 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.27 — 2026/11/24 01:52
+
+1. 精簡轉址頁：根目錄 index.html 移除外部 GTM 腳本，改為極速純轉址（降低轉址延遲至 5ms 內）
+2. 消除 CLS 版面位移：#services-container 預設注入 data-cols="2" 並加入 DOM 差異比對，消除專業服務區塊載入跳動（CLS 從 0.230 降至 0）
+3. 圖片尺寸防抖：LINE 好友按鈕明確指定 width="116" 與 height="36"，避免排版突變
+4. 移除無效連線：移除 services/index.html 未使用的 cdn.jsdelivr.net preconnect 標籤
+5. 補齊圖片 SEO：Services.js 彙典動態圖片補上 alt 標籤
 ## V3.26 — 2026/11/24 01:38
 
 1. 拆分公告資料：自 postFB.json 抽出獨立輕量 Data/notices.json（體積縮減 95%）

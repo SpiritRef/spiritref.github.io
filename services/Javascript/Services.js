@@ -263,7 +263,7 @@ function renderCompendium() {
                         let src = u;
                         if (src.startsWith('pic/')) src = '/ghoststory/' + src;
                         else if (src.startsWith('ghoststory/pic/')) src = '/' + src;
-                        return `<img src="${src}" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'">`;
+                        return `<img src="${src}" alt="${q}" style="max-width:100%; border-radius:8px; margin:6px 0; display:block;" loading="lazy" onerror="this.style.display='none'">`;
                     }).join('')}</div>`;
                 }
                 return `<div class="compendium-links"><span>相關文章：</span>
@@ -294,12 +294,17 @@ function renderServices(data) {
         container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">專業服務整理中。</p>';
         return;
     }
-    container.innerHTML = data.map((item, index) => `
+    const html = data.map((item, index) => `
         <div class="card">
             <h3>${item["標題"] || '專業服務'}</h3>
             <p>${Global.linkify(item["貼文內容"] || '歡迎洽詢。').replace(/\n/g, '<br>')}</p>
         </div>
     `).join('');
+    // 比對 HTML 變更，內容完全一致時不重繪 DOM，消除初始載入的 CLS 版面跳動
+    if (container.dataset.renderedHtml !== html) {
+        container.dataset.renderedHtml = html;
+        container.innerHTML = html;
+    }
 }
 
 function renderVisualRecords(displayData, totalCount) {
