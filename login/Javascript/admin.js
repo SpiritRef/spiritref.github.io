@@ -414,6 +414,11 @@ async function saveAll() {
 		// 新出現的 ID 也要計入已看過（避免下次重覆當作新增項目）
 		for (const p of (postsNow || [])) if (p && p['PostID'] != null) loadedPostIds.add(String(p['PostID']));
 		for (const s of (svcNow || [])) if (s && s['ID'] != null) loadedSvcIds.add(String(s['ID']));
+		// 4.5 若本次有異動 posts，同步輸出輕量版公告檔（前台首頁專用，與 postFB.json 同一 commit）
+		if (postsNext) {
+			const notices = postsNext.filter(i => String(i['標題'] || '').includes('公告'));
+			batchFiles.push({ path: 'Data/notices.json', content: JSON.stringify(notices, null, 1) });
+		}
 		// 5. 版本戳（只在本次批次有任何內容變更時才寫）
 		if (batchFiles.length > 0) {
 			try {
@@ -957,8 +962,11 @@ function openNoticeEditor(idx) {
 	const src = allNotices[idx];
 	editing = { kind: 'notice', idx };
 	$('modalTitle').innerText = `編輯公告（${src['PostID'] ?? ''}）`;
-	$('modalFields').innerHTML = [['標題', 'text'], ['發佈日期', 'text'], ['貼文內容', 'textarea']].map(([k, t]) => {
+	$('modalFields').innerHTML = [['標題', 'text'], ['發佈日期', 'text'], ['貼文內容', 'textarea'], ['圖片網址', 'text']].map(([k, t]) => {
 		const v = src[k] ?? '';
+		if (k === '圖片網址') {
+			return `<label>${k}</label><input data-k="${k}" value="${esc(String(v)).replace(/"/g, '&quot;')}" placeholder="圖片路徑或網址（例如 pic/xxx.jpg）"><button type="button" class="rowbtn" style="margin-top:6px;" onclick="uploadNoticeImage(this)">📤 上傳圖片</button>`;
+		}
 		return `<label>${k}</label>` + (t === 'textarea'
 			? `<textarea data-k="${k}">${esc(v)}</textarea>`
 			: `<input data-k="${k}" value="${esc(String(v)).replace(/"/g, '&quot;')}">`);
@@ -974,7 +982,10 @@ function openNoticeCreator() {
 	const now = new Date();
 	const pad = (n) => String(n).padStart(2, '0');
 	const nowStr = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-	$('modalFields').innerHTML = [['標題', 'text', '【公告】'], ['發佈日期', 'text', nowStr], ['貼文內容', 'textarea', '']].map(([k, t, v]) => {
+	$('modalFields').innerHTML = [['標題', 'text', '【公告】'], ['發佈日期', 'text', nowStr], ['貼文內容', 'textarea', ''], ['圖片網址', 'text', '']].map(([k, t, v]) => {
+		if (k === '圖片網址') {
+			return `<label>${k}</label><input data-k="${k}" value="" placeholder="圖片路徑或網址（例如 pic/xxx.jpg）"><button type="button" class="rowbtn" style="margin-top:6px;" onclick="uploadNoticeImage(this)">📤 上傳圖片</button>`;
+		}
 		return `<label>${k}</label>` + (t === 'textarea'
 			? `<textarea data-k="${k}">${esc(v)}</textarea>`
 			: `<input data-k="${k}" value="${esc(String(v)).replace(/"/g, '&quot;')}">`);
@@ -1204,8 +1215,9 @@ async function saveEdit() {
 			logOp('編輯文章', `${pid} ${f['標題'] || ''}`);
 			setStatus('已暫存，按上方儲存才寫入', 'orange');
 		} else if (editing.kind === 'notice') {
+			const picVal = (f['圖片網址'] || '').trim() || null;
 			if (editing.idx === -1) {
-				const entry = { "發佈日期": f['發佈日期'] || '', "標題": f['標題'] || '', "貼文內容": f['貼文內容'] || '', "圖片網址": null };
+				const entry = { "發佈日期": f['發佈日期'] || '', "標題": f['標題'] || '', "貼文內容": f['貼文內容'] || '', "圖片網址": picVal };
 				stage('posts', { type: 'append', entry });
 				logOp('新增公告', `${f['標題'] || ''}`);
 				allNotices.push(entry);
@@ -1213,13 +1225,14 @@ async function saveEdit() {
 				renderNoticesAdmin();
 				setStatus('已暫存，按上方儲存才寫入', 'orange');
 			} else {
-			const pid = allNotices[editing.idx]['PostID'];
-			allNotices[editing.idx] = { ...allNotices[editing.idx], ...f };
-			sortPinned(allNotices);
-			renderNoticesAdmin();
-			stage('posts', { type: 'update', match: { PostID: pid }, fields: f });
-			logOp('編輯公告', `${pid} ${f['標題'] || ''}`);
-			setStatus('已暫存，按上方儲存才寫入', 'orange');
+				const pid = allNotices[editing.idx]['PostID'];
+				const updatedFields = { ...f, "圖片網址": picVal };
+				allNotices[editing.idx] = { ...allNotices[editing.idx], ...updatedFields };
+				sortPinned(allNotices);
+				renderNoticesAdmin();
+				stage('posts', { type: 'update', match: { PostID: pid }, fields: updatedFields });
+				logOp('編輯公告', `${pid} ${f['標題'] || ''}`);
+				setStatus('已暫存，按上方儲存才寫入', 'orange');
 			}
 		} else {
 			const cat = svcCat;
@@ -1604,6 +1617,59 @@ window.uploadSvcImage = function(btn) {
 			}
 			setStatus('✅ 圖片已上傳', 'green');
 			logOp('上傳圖片', filePath);
+		} catch (e) {
+			setStatus('❌ 上傳失敗：' + e.message, 'red');
+		} finally {
+			btn.innerText = '📤 上傳圖片';
+			btn.disabled = false;
+		}
+	};
+	fileInput.click();
+};
+
+
+
+// ---------- 公告圖片上傳 ----------
+window.uploadNoticeImage = function(btn) {
+	const fileInput = document.createElement('input');
+	fileInput.type = 'file';
+	fileInput.accept = 'image/*';
+	fileInput.onchange = async function() {
+		const file = fileInput.files[0];
+		if (!file) return;
+		const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+		const now = new Date();
+		const pad = n => String(n).padStart(2, '0');
+		const dateBase = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+		const fileName = `${dateBase}.${ext}`;
+		const repoPath = `${GHOST_REPO}/pic/${fileName}`; // ghoststory/pic/xxx.jpg
+		const valPath = `pic/${fileName}`;
+		btn.innerText = '上傳中...';
+		btn.disabled = true;
+		try {
+			const pat = await ensurePat();
+			const base64 = await new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.readAsDataURL(file);
+				reader.onload = () => {
+					const raw = reader.result.split(',')[1];
+					resolve(raw.replace(/\s/g, ''));
+				};
+				reader.onerror = (e) => reject(e);
+			});
+			const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${repoPath}`;
+			const res = await fetch(apiUrl, {
+				method: 'PUT',
+				headers: ghHeaders(pat),
+				body: JSON.stringify({ message: `Upload ${fileName} (notice)`, content: base64 })
+			});
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const input = document.querySelector('#modalFields input[data-k="圖片網址"]');
+			if (input) {
+				input.value = input.value ? (input.value + '|' + valPath) : valPath;
+			}
+			setStatus('✅ 圖片已上傳', 'green');
+			logOp('上傳圖片', valPath);
 		} catch (e) {
 			setStatus('❌ 上傳失敗：' + e.message, 'red');
 		} finally {

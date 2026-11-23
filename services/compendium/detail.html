@@ -69,7 +69,7 @@
         const container = document.getElementById('detail-content');
         let data = [];
         try {
-            const r = await fetch('/Data/Services.json?t=' + Date.now(), { cache: 'no-store' });
+            const r = await fetch('/Data/Services.json', { cache: 'default' });
             if (r.ok) data = await r.json();
         } catch (e) {}
         if (!Array.isArray(data)) data = [];

@@ -5,6 +5,14 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.26 — 2026/11/24 01:38
+
+1. 拆分公告資料：自 postFB.json 抽出獨立輕量 Data/notices.json（體積縮減 95%）
+2. 後台自動同步：admin.js 儲存流程新增自動同步輸出 Data/notices.json（與 postFB.json 同一 commit）
+3. 首頁請求最佳化：Services.js 載入公告改為優先讀取 Data/notices.json，並保留 postFB.json 降級容錯
+4. 清理快取破壞：services/compendium/detail.html 移除 Services.json 強制 no-store 與時間戳，恢復 CDN/瀏覽器快取
+5. 後台公告功能補全：admin.js 新增/編輯公告支援「圖片網址」輸入與「📤 上傳圖片」按鈕
+
 ## V3.25 — 2026/11/19 01:27
 
 1. 還原為 plain blocking CSS：`/CSS/global.css`、`/services/CSS/Services.css`、`/services/CSS/cloud.css` 皆以 `<link rel="stylesheet">` 直接注入，不用 preload onload 轉換（V3.24 的 preload pattern 造成 CLS 0.43、LCP 9.5 秒、Performance 55 嚴重退化；V3.25 恢復至 V3.22/V3.23 已知的穩定狀態 ~2.6s LCP）

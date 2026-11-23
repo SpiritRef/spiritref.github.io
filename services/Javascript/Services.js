@@ -39,8 +39,11 @@ async function initApp() {
 
             // 💡 第二階段：補抓靜態 JSON (如果快取是空的)
             const loadTasks = [];
-            if (allNotices.length === 0 && JsonDataPath) {
-                loadTasks.push(loadStaticData(JsonDataPath, 'notice'));
+            if (allNotices.length === 0) {
+                const noticesPath = '/Data/notices.json';
+                loadTasks.push(loadStaticData(noticesPath, 'notice').catch(() => {
+                    if (JsonDataPath) return loadStaticData(JsonDataPath, 'notice');
+                }));
             }
             if (allServices.length === 0 && JsonServicePath) {
                 loadTasks.push(loadStaticData(JsonServicePath, 'service'));
@@ -140,7 +143,10 @@ async function refreshFromVersion() {
     } catch (e) {}
     Global.clearFrontendCache();
     const tasks = [];
-    if (JsonDataPath) tasks.push(loadStaticData(JsonDataPath, 'notice'));
+    const noticesPath = '/Data/notices.json';
+    tasks.push(loadStaticData(noticesPath, 'notice').catch(() => {
+        if (JsonDataPath) return loadStaticData(JsonDataPath, 'notice');
+    }));
     if (JsonServicePath) tasks.push(loadStaticData(JsonServicePath, 'service'));
     await Promise.all(tasks);
     try {
