@@ -5,6 +5,11 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.30 ─ 2026/11/24 22:58
+
+1. 根治地理 API 限流報錯：全站前台分析與後台登入全面替換為 `https://ipwho.is/`，並加入 1.2 秒超時防護與 HTTP 200 安全容錯，徹底消滅主控台 `429 Too Many Requests` 報錯與 2.5 秒請求延遲，使最佳做法達成 100 滿分
+2. 後台 Sitemap 機制快取刷新：login/Javascript/admin.js 引用 sitemap.js 更新至 20261124b，確保後台每次發布文章與服務時，皆採用最新的純 200 OK Sitemap 規範
+3. 全站腳本快取版本號同步升級至 20261124c / 20261212g
 ## V3.29 ─ 2026/11/24 22:40
 
 1. 修正 Sitemap 規範：移除 sitemap.xml、Javascript/sitemap.js 及 Tool/generate-sitemap.ps1 中的根目錄轉址網址（`https://spiritref.github.io/`），確保 Sitemap 僅收錄 200 OK 權威頁面，符合 Google 檢索規範

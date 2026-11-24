@@ -32,7 +32,7 @@ export async function logAdminEvent(eventName, email) {
 	try {
 		let geo = {};
 		try {
-			const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+			const r = await fetch('https://ipwho.is/', { cache: 'no-store' });
 			geo = await r.json().catch(() => ({}));
 		} catch (e) { console.warn('IP 服務讀取失敗:', e); }
 
@@ -43,7 +43,7 @@ export async function logAdminEvent(eventName, email) {
 			ip: geo.ip || null,
 			city: geo.city || null,
 			region: geo.region || null,
-			country_name: geo.country_name || null,
+			country_name: geo.country || geo.country_name || null,
 			user_agent: navigator.userAgent || null,
 			language: navigator.language || null,
 			timezone: geo.timezone || null,

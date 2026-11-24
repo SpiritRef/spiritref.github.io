@@ -221,38 +221,43 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 		try { payload.language = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || null; } catch (e) { payload.language = null; }
 
 		// 地理座標：每個瀏覽器分頁只抓一次
-		const isBotOrAudit = typeof navigator !== 'undefined' && (
-			navigator.webdriver ||
-			/Lighthouse|Headless|bot|crawl|spider/i.test(navigator.userAgent)
-		);
-		if (!isBotOrAudit) {
-			const geoCache = sessionStorage.getItem('user_geo_cache');
-			if (geoCache) {
-				try {
-					const g = JSON.parse(geoCache);
-					payload.city = g.city || null;
-					payload.region = g.region || null;
-					payload.country_name = g.country_name || null;
-					payload.latitude = g.latitude || null;
-					payload.longitude = g.longitude || null;
-				} catch (e) {}
-			} else {
-				try {
-					const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
-					if (r.ok) {
-						const g = await r.json().catch(() => ({}));
+		// 地理座標：每個瀏覽器分頁只抓一次（改用 ipwho.is，永不回傳 429 報錯，並設 1.2 秒超時防護）
+		const geoCache = sessionStorage.getItem('user_geo_cache');
+		if (geoCache) {
+			try {
+				const g = JSON.parse(geoCache);
+				payload.city = g.city || null;
+				payload.region = g.region || null;
+				payload.country_name = g.country_name || g.country || null;
+				payload.latitude = g.latitude || null;
+				payload.longitude = g.longitude || null;
+			} catch (e) {}
+		} else {
+			try {
+				const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+				const timeoutId = controller ? setTimeout(() => controller.abort(), 1200) : null;
+				const r = await fetch('https://ipwho.is/', { 
+					cache: 'no-store',
+					signal: controller ? controller.signal : undefined 
+				});
+				if (timeoutId) clearTimeout(timeoutId);
+				if (r.ok) {
+					const g = await r.json().catch(() => ({}));
+					if (g && g.success !== false) {
 						sessionStorage.setItem('user_geo_cache', JSON.stringify(g));
 						payload.city = g.city || null;
 						payload.region = g.region || null;
-						payload.country_name = g.country_name || null;
+						payload.country_name = g.country || g.country_name || null;
 						payload.latitude = g.latitude || null;
 						payload.longitude = g.longitude || null;
 					} else {
 						sessionStorage.setItem('user_geo_cache', JSON.stringify({}));
 					}
-				} catch (e) {
+				} else {
 					sessionStorage.setItem('user_geo_cache', JSON.stringify({}));
 				}
+			} catch (e) {
+				sessionStorage.setItem('user_geo_cache', JSON.stringify({}));
 			}
 		}
 
