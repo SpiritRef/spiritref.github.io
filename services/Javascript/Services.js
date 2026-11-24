@@ -182,7 +182,7 @@ function renderNotices() {
         return (Number(b["PostID"]) || 0) - (Number(a["PostID"]) || 0);
     });
     const displayList = sorted.slice(0, 5);
-    content.innerHTML = displayList.map(item => {
+    const html = displayList.map(item => {
         const text = item["貼文內容"] || item["內容"] || "";
         const summary = text.length > 50 ? text.substring(0, 50) + "..." : text;
         const summaryHtml = Global.linkify(summary);
@@ -195,6 +195,10 @@ function renderNotices() {
             </div>
         `;
     }).join('');
+    if (content.dataset.renderedHtml !== html) {
+        content.dataset.renderedHtml = html;
+        content.innerHTML = html;
+    }
 }
 
 /**

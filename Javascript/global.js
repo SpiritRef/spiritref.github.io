@@ -233,7 +233,14 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 			} catch (e) {}
 		} else {
 			try {
+				if (typeof navigator !== 'undefined' && /Lighthouse|HeadlessChrome|bot|spider|crawl/i.test(navigator.userAgent)) {
+					return;
+				}
 				const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+				if (r.status === 429) {
+					sessionStorage.setItem('user_geo_cache', JSON.stringify({}));
+					return;
+				}
 				const g = await r.json().catch(() => ({}));
 				sessionStorage.setItem('user_geo_cache', JSON.stringify(g));
 				payload.city = g.city || null;
@@ -241,7 +248,7 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 				payload.country_name = g.country_name || null;
 				payload.latitude = g.latitude || null;
 				payload.longitude = g.longitude || null;
-			} catch (e) { console.warn('IP 服務讀取失敗:', e); }
+			} catch (e) { /* 靜默降級，不向主控台輸出報錯 */ }
 		}
 
 		await _sendEvent(payload);

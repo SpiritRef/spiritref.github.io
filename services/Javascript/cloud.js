@@ -53,6 +53,8 @@
         const img = document.createElement('img');
         img.src = IMAGES[Math.floor(Math.random() * IMAGES.length)];
         img.alt = '';
+        img.width = 720;
+        img.height = 249;
         img.draggable = false;
         if (Math.random() > 0.5) img.style.transform = 'scaleX(-1)';
         bob.appendChild(img);
