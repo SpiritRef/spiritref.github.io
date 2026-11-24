@@ -13,13 +13,12 @@
     <link rel="shortcut icon" href="/GhostKowtow.ico" type="image/x-icon">
 	<link rel="canonical" href="https://spiritref.github.io/services/" />
 	
-	<link rel="preconnect" href="https://ocqycgcatxdbpffpxdva.supabase.co" crossorigin>
     <!-- 行動裝置捷徑圖示 -->
     <link rel="apple-touch-icon" href="/GhostKowtow.jpg">
 
     <!-- 3. CSS 連結 (保持原樣) -->
 	<link rel="stylesheet" href="/CSS/global.css?v=20261012">
-    <link rel="stylesheet" href="CSS/Services.css?v=20261012c">
+    <link rel="stylesheet" href="CSS/Services.css?v=20261124b">
     <link rel="stylesheet" href="CSS/cloud.css?v=20261011">
     <style>
         /* 首頁內容框：淺灰半透明＋黑字（公告板、卡片維持原樣） */
@@ -40,9 +39,16 @@
         .card h3 { color: #4a2e1b; border-bottom: 2px solid #8b7355; }
         .card p { color: #5c4332; }
         
-        /* 按鈕 */
-        .btn { background: #8b7355; color: #ffffff; }
-        .btn:hover { background: #6d5a3e; }
+        /* 公告日期對比度 (WCAG AA 達標) */
+        .notice-date { color: #4a2e1b !important; }
+        .more-link { color: #9c2718 !important; font-weight: bold; }
+        .container #contact a { color: #523b20 !important; font-weight: 500; text-decoration: underline; }
+        footer { color: #444444 !important; }
+        footer p:last-child { opacity: 0.85; }
+
+        /* 按鈕（加深為高對比飽和雅緻暖棕色，對比度 > 6:1） */
+        .btn { background: #644c33; color: #ffffff; }
+        .btn:hover { background: #4d3a26; }
     </style>
 
     <!-- 4. Facebook / LINE 分享預覽設定 -->
@@ -93,7 +99,7 @@
     </button>
 </div>
 	
-<div class="container">
+<main class="container">
 	<!-- 1. 個人簡介 -->
 	<section class="intro-section">
 		<p class="intro-text">我是鬼磕頭。
@@ -196,13 +202,13 @@
 			<li>LINE QR Code：<br><img src="../pic/Line@.jpg" alt="LINE QR Code" style="width: 140px; height: 140px; margin-top: 8px; border: 1px solid #eee; border-radius: 6px; object-fit: contain; background: #fff;"></li>
 		</ul>
 	</section>
-</div>
+</main>
 
 <footer>
 	<p>&copy; 2026 鬼磕頭. All Rights Reserved.</p>
 </footer>
-<script type="module" src="Javascript/Services.js?v=20261120"></script>
-<script src="Javascript/cloud.js?v=20261120"></script>
+<script type="module" src="Javascript/Services.js?v=20261124b"></script>
+<script src="Javascript/cloud.js?v=20261124b"></script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-PSE2H8VSBQ"></script>
 <script>

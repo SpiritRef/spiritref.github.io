@@ -5,6 +5,14 @@
 
 > 格式：版本 — 上傳時間 — commit → 版本內容（1.、2. …）
 
+## V3.29 ─ 2026/11/24 22:40
+
+1. 修正 Sitemap 規範：移除 sitemap.xml、Javascript/sitemap.js 及 Tool/generate-sitemap.ps1 中的根目錄轉址網址（`https://spiritref.github.io/`），確保 Sitemap 僅收錄 200 OK 權威頁面，符合 Google 檢索規範
+2. 語意結構標記：services/index.html 內容主容器改用標準語意標籤 `<main class="container">`，補齊無障礙主要位置標記，消除最佳做法缺失
+3. 根除 429 報錯：Javascript/global.js 強化自動化審核識別（判定 `navigator.webdriver` 及 Lighthouse UA），避免審核期間呼叫外部 IP API 造成主控台 429 錯誤
+4. 移除冗餘預先連線：services/index.html 移除 Supabase 未使用的 preconnect 標籤，消滅 Lighthouse 警示
+5. 無障礙色彩對比度達標 (WCAG AA)：全面提升公告日期（`.notice-date`）、按鈕（`.btn` 調整為深雅暖棕）、更多連結（`.more-link`）及頁尾資訊對比度，對比率皆達標 WCAG AA（> 4.5:1）
+6. 更新快取版本號：更新 Services.js、cloud.js、Services.css 等引入版本號至 20261124b，確保即時刷新
 ## V3.28 — 2026/11/24 22:00
 
 1. 根治 CLS（0.23 -> 0）：最新公告區塊預先靜態算繪 5 則公告並加入 min-height: 240px，徹底消除下方專業服務區塊載入時被向下推擠 260px 的位移

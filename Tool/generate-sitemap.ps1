@@ -37,8 +37,7 @@ $static = @(
     @{ loc="$base/services/compendium/"; lastmod=$today },
     @{ loc="$base/services/notices/"; lastmod=$today },
     @{ loc="$base/services/consult.html"; lastmod=$today },
-    @{ loc="$base/ghoststory/"; lastmod=$today },
-    @{ loc="$base/"; lastmod=$today }
+    @{ loc="$base/ghoststory/"; lastmod=$today }
 )
 foreach ($s in $static) { $entries += $s }
 

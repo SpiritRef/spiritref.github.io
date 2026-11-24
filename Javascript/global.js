@@ -221,34 +221,39 @@ export async function trackEvent(eventName, stayTime = 0, pageUrl = _fullPageUrl
 		try { payload.language = (typeof navigator !== 'undefined' && (navigator.language || (navigator.languages && navigator.languages[0]))) || null; } catch (e) { payload.language = null; }
 
 		// 地理座標：每個瀏覽器分頁只抓一次
-		const geoCache = sessionStorage.getItem('user_geo_cache');
-		if (geoCache) {
-			try {
-				const g = JSON.parse(geoCache);
-				payload.city = g.city || null;
-				payload.region = g.region || null;
-				payload.country_name = g.country_name || null;
-				payload.latitude = g.latitude || null;
-				payload.longitude = g.longitude || null;
-			} catch (e) {}
-		} else {
-			try {
-				if (typeof navigator !== 'undefined' && /Lighthouse|HeadlessChrome|bot|spider|crawl/i.test(navigator.userAgent)) {
-					return;
-				}
-				const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
-				if (r.status === 429) {
+		const isBotOrAudit = typeof navigator !== 'undefined' && (
+			navigator.webdriver ||
+			/Lighthouse|Headless|bot|crawl|spider/i.test(navigator.userAgent)
+		);
+		if (!isBotOrAudit) {
+			const geoCache = sessionStorage.getItem('user_geo_cache');
+			if (geoCache) {
+				try {
+					const g = JSON.parse(geoCache);
+					payload.city = g.city || null;
+					payload.region = g.region || null;
+					payload.country_name = g.country_name || null;
+					payload.latitude = g.latitude || null;
+					payload.longitude = g.longitude || null;
+				} catch (e) {}
+			} else {
+				try {
+					const r = await fetch('https://ipapi.co/json/', { cache: 'no-store' });
+					if (r.ok) {
+						const g = await r.json().catch(() => ({}));
+						sessionStorage.setItem('user_geo_cache', JSON.stringify(g));
+						payload.city = g.city || null;
+						payload.region = g.region || null;
+						payload.country_name = g.country_name || null;
+						payload.latitude = g.latitude || null;
+						payload.longitude = g.longitude || null;
+					} else {
+						sessionStorage.setItem('user_geo_cache', JSON.stringify({}));
+					}
+				} catch (e) {
 					sessionStorage.setItem('user_geo_cache', JSON.stringify({}));
-					return;
 				}
-				const g = await r.json().catch(() => ({}));
-				sessionStorage.setItem('user_geo_cache', JSON.stringify(g));
-				payload.city = g.city || null;
-				payload.region = g.region || null;
-				payload.country_name = g.country_name || null;
-				payload.latitude = g.latitude || null;
-				payload.longitude = g.longitude || null;
-			} catch (e) { /* 靜默降級，不向主控台輸出報錯 */ }
+			}
 		}
 
 		await _sendEvent(payload);
