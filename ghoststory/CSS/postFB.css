@@ -45,11 +45,34 @@
 
 .thumb-img-container { 
     display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; 
-    padding-bottom: 5px; width: 100%; 
+    padding-bottom: 5px; width: 100%; min-height: 80px;
 }
 .thumb-img { 
-    width: 80px !important; height: 80px !important; object-fit: cover; 
-    border-radius: 8px; border: 1px solid #eee; flex-shrink: 0; 
+    width: 80px !important; height: 80px !important; aspect-ratio: 1 / 1; object-fit: cover; 
+    border-radius: 8px; border: 1px solid #eee; flex-shrink: 0; background-color: #f0e6d6;
+}
+
+/* ==========================================================================
+   4-1. 骨架屏載入佔位 (預防版面位移 CLS)
+   ========================================================================== */
+.skeleton-card {
+    background: linear-gradient(135deg, #f7ebd7 0%, #e6d3af 100%);
+    border: 1px solid #dcbfa2;
+    border-left: 5px solid #8b7355;
+    padding: 15px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+}
+.skeleton-bar {
+    background: rgba(139, 115, 85, 0.22);
+    border-radius: 4px;
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.65; }
+    50% { opacity: 0.25; }
 }
 
 /* ==========================================================================
@@ -137,7 +160,7 @@
    ========================================================================== */
 footer {
     padding: 20px 20px 30px 20px; text-align: center; 
-    background-color: transparent; color: #999; font-size: 0.75rem; line-height: 1.4;
+    background-color: transparent; color: #595959; font-size: 0.8rem; line-height: 1.4;
 }
 
 /* ==========================================================================

@@ -19,7 +19,7 @@ let currentPage = 1;
 let favorites = JSON.parse(localStorage.getItem('novel_favs')) || [];
 let showOnlyFavs = false;
 
-let JsonData = "";
+let JsonData = "/Data/postFB.json";
 
 window.addEventListener('pageshow', (event) => {
     if (event.persisted) refreshFromVersion();
@@ -30,7 +30,6 @@ window.addEventListener('pageshow', (event) => {
  */
 async function initApp() {
     const iniPath = '/settings/global.ini';
-    const config = await getIni(iniPath);
 
     // 支援 ?page=N 直接跳到指定分頁
     try {
@@ -49,15 +48,19 @@ async function initApp() {
         }
     } catch (e) { /* 忽略 URL 解析失敗 */ }
     
-    if (config) {
-        if (config.MENU_DATA) initMenu(config.MENU_DATA);
-        if (config.JsonData) JsonData = config.JsonData; 
-        
-        // 資料庫 = GitHub 靜態 JSON，直接載入
-        loadData(); 
-    } else {
-        console.error("無法載入 INI 設定檔");
-    }
+    // 並行載入資料與設定檔，避免關鍵路徑串聯阻塞
+    const dataPromise = loadData();
+    const configPromise = getIni(iniPath).then(config => {
+        if (config) {
+            if (config.MENU_DATA) initMenu(config.MENU_DATA);
+            if (config.JsonData && config.JsonData !== JsonData) {
+                JsonData = config.JsonData;
+                fetchStaticJson(JsonData);
+            }
+        }
+    }).catch(err => console.error("無法載入 INI 設定檔", err));
+
+    await Promise.all([dataPromise, configPromise]);
 }
 
 /**
@@ -234,6 +237,7 @@ function updateJumpSelect(maxPage) {
 function renderList(posts) {
     const list = document.getElementById('post-list');
     if (!list) return;
+    list.removeAttribute('aria-busy');
     list.innerHTML = '';
     
     posts.forEach(post => {
@@ -252,7 +256,14 @@ function renderList(posts) {
             imgData.split(/\r?\n|\|/).slice(0, 3).forEach(src => {
                 const cleanSrc = src.trim();
                 if(cleanSrc) {
-                    imgHtml += `<img src="${cleanSrc}" class="thumb-img" alt="文章縮圖" loading="lazy" onerror="this.style.display='none'">`;
+                    // 若為本站文章圖片，優先改用 thumb/ 輕量縮圖，失敗時自動退回原圖
+                    let thumbSrc = cleanSrc;
+                    if (cleanSrc.startsWith('pic/')) {
+                        thumbSrc = cleanSrc.replace(/^pic\//, 'pic/thumb/');
+                    } else if (cleanSrc.startsWith('/ghoststory/pic/')) {
+                        thumbSrc = cleanSrc.replace(/^\/ghoststory\/pic\//, '/ghoststory/pic/thumb/');
+                    }
+                    imgHtml += `<img src="${thumbSrc}" data-fallback="${cleanSrc}" width="80" height="80" class="thumb-img" alt="文章縮圖" loading="lazy" decoding="async" onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;delete this.dataset.fallback;}else{this.style.display='none';}">`;
                 }
             });
             imgHtml += `</div>`;

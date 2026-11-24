@@ -132,6 +132,50 @@ window.fetchToken = async function() {
 };
 
 // --- 核心功能：多檔案上傳（直傳 ghoststory/pic） ---
+/**
+ * 於瀏覽器端使用 HTML5 Canvas 自動產生 160x160 居中正方形輕量縮圖 (JPEG 品質 82%)
+ */
+async function generateThumbnailBase64(file, targetSize = 160, quality = 0.82) {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		const url = URL.createObjectURL(file);
+		img.onload = () => {
+			try {
+				const canvas = document.createElement('canvas');
+				canvas.width = targetSize;
+				canvas.height = targetSize;
+				const ctx = canvas.getContext('2d');
+
+				const srcW = img.width;
+				const srcH = img.height;
+				let cropX = 0, cropY = 0, cropW = srcW, cropH = srcH;
+
+				if (srcW > srcH) {
+					cropW = srcH;
+					cropX = (srcW - srcH) / 2;
+				} else {
+					cropH = srcW;
+					cropY = (srcH - srcW) / 2;
+				}
+
+				ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetSize, targetSize);
+				const dataUrl = canvas.toDataURL('image/jpeg', quality);
+				const raw = dataUrl.split(',')[1];
+				URL.revokeObjectURL(url);
+				resolve(raw.replace(/\s/g, ''));
+			} catch (err) {
+				URL.revokeObjectURL(url);
+				reject(err);
+			}
+		};
+		img.onerror = (e) => {
+			URL.revokeObjectURL(url);
+			reject(e);
+		};
+		img.src = url;
+	});
+}
+
 window.uploadToGithub = async function() {
 	const session = await requireSession();
 	if (!session) return;
@@ -191,6 +235,22 @@ window.uploadToGithub = async function() {
 
 			if (res.ok) {
 				uploadedPaths.push(filePath);
+
+				// 自動同步產生並上傳 160x160 輕量縮圖至 pic/thumb/
+				try {
+					const thumbBase64 = await generateThumbnailBase64(file);
+					const thumbApiUrl = `https://api.github.com/repos/${GITHUB_USER}/${JSON_REPO}/contents/${GITHUB_REPO}/${GITHUB_PATH}/thumb/${fileName}`;
+					await fetch(thumbApiUrl, {
+						method: "PUT",
+						headers: ghHeaders(pat),
+						body: JSON.stringify({
+							message: `Upload thumb: ${fileName}`,
+							content: thumbBase64
+						})
+					});
+				} catch (thumbErr) {
+					console.warn("縮圖自動生成/上傳失敗 (不影響原圖發文):", thumbErr);
+				}
 			} else {
 				const contentType = res.headers.get("content-type");
 				let errorDetails = `HTTP ${res.status}`;

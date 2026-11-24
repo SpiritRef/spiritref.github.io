@@ -1,0 +1,119 @@
+/* ==========================================================================
+   靈界之門：天與地 (電影級高清影片穿梭)
+   ========================================================================== */
+#spirit-gate-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 999999;
+    background-color: #000000;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: opacity 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#spirit-gate-overlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 核心影片播放器 */
+.gate-video-player {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* 電腦端維持真實比例並居中 */
+    background: #000000;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* 控制按鈕群組 (頂部右側) */
+.gate-controls-group {
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top) + 12px);
+    right: max(18px, env(safe-area-inset-right) + 12px);
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+}
+
+/* 聲音按鈕與略過按鈕共通樣式 */
+.gate-control-btn {
+    background: rgba(0, 0, 0, 0.68);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.25s ease;
+}
+.gate-control-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: #ffffff;
+    transform: scale(1.04);
+}
+.gate-control-btn:active {
+    transform: scale(0.96);
+}
+
+/* 聲音按鈕高亮提示 (當有聲音但處於靜音時) */
+.gate-sound-btn.pulse {
+    border-color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+    animation: soundBtnPulse 1.8s infinite ease-in-out;
+}
+@keyframes soundBtnPulse {
+    0%, 100% { transform: scale(1); border-color: rgba(255, 215, 0, 0.6); }
+    50% { transform: scale(1.06); border-color: #ffd700; }
+}
+
+/* 底部提示文字 */
+.gate-enter-hint {
+    position: absolute;
+    bottom: max(22px, env(safe-area-inset-bottom) + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    letter-spacing: 3px;
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+    animation: hintPulse 2.4s infinite ease-in-out;
+}
+
+@keyframes hintPulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.95; }
+}
+
+/* 行動端優化 */
+@media (max-width: 600px) or (orientation: portrait) {
+    .gate-video-player {
+        object-fit: cover; /* 手機直屏完美滿版 */
+    }
+
+    .gate-control-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}
